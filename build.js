@@ -1,0 +1,8 @@
+const fs=require('node:fs');const path=require('node:path');
+const root=__dirname;
+const core=fs.readFileSync(path.join(root,'core.js'),'utf8');
+let source=fs.readFileSync(path.join(root,'plugin.js'),'utf8');
+source=source.replace("require('./core')",`(()=>{const module={exports:{}};\n${core}\nreturn module.exports;})()`);
+source=source.replace("require('./i18n')",`(()=>{const module={exports:{}};\n${fs.readFileSync(path.join(root,'i18n.js'),'utf8')}\nreturn module.exports;})()`);
+fs.writeFileSync(path.join(root,'main.js'),'/* Easy Text Highlighter. Built from plugin.js, core.js and i18n.js. */\n'+source);
+console.log('Built main.js');

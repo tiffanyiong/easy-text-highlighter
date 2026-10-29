@@ -1,0 +1,215 @@
+/* Reading marks are independent of the active theme. */
+.aih-mark.aih-highlight,.aih-excerpt.aih-highlight {background:var(--aih-tint);color:inherit;padding-block:var(--aih-height,2px);border-radius:4px;box-decoration-break:clone;-webkit-box-decoration-break:clone;}
+.aih-mark.aih-underline,.aih-mark.aih-wave,.aih-excerpt.aih-underline,.aih-excerpt.aih-wave {background:transparent;color:inherit;text-decoration-line:underline;text-decoration-color:var(--aih-color);text-decoration-thickness:var(--aih-width);text-underline-offset:.2em;text-decoration-skip-ink:none;}
+.aih-mark.aih-wave,.aih-excerpt.aih-wave {text-decoration-style:wavy;}
+.aih-float {position:fixed;z-index:var(--layer-popover,1000);display:flex;flex-direction:column;align-items:center;gap:6px;width:max-content;box-sizing:border-box;overflow:auto;padding:4px;user-select:none;-webkit-user-select:none;touch-action:manipulation;--aih-icon-size:22px;--aih-ink:#f8f5ec;--aih-surface:#654b35;}
+.aih-float .aih-toolbar,.aih-float .aih-colorbar {display:flex;align-items:center;background:var(--aih-surface);color:var(--aih-ink);box-shadow:0 5px 18px #0002;border:1px solid #ffffff12;box-sizing:border-box;flex-shrink:0;}
+.aih-float .aih-toolbar {border-radius:13px;padding:3px 5px;gap:2px;}
+body .aih-float .aih-toolbar button.aih-tool {display:flex;align-items:center;justify-content:center;min-width:32px;width:32px;min-height:32px;height:32px;padding:5px;border:0;border-radius:9px;corner-shape:round;background:transparent;color:var(--aih-ink);box-shadow:none;cursor:pointer;transform:none;}
+body .aih-float .aih-toolbar button.aih-tool:hover,body .aih-float .aih-toolbar button.aih-tool:focus-visible {background:#ffffff12;}
+.aih-tool svg {width:var(--aih-icon-size);height:var(--aih-icon-size);pointer-events:none;}
+.aih-tool .aih-icon-guide {opacity:.3;}
+.aih-tool .aih-icon-tint {fill:#ffffff25;stroke:none;}
+.aih-tool .aih-icon-accent {stroke:var(--aih-ink);}
+.aih-tool:is(:hover,:focus-visible,[aria-pressed=true]) .aih-icon-accent {stroke:var(--aih-choice);stroke-width:2.4;}
+.aih-tool:is(:hover,:focus-visible,[aria-pressed=true]) .aih-icon-tint {fill:var(--aih-choice);fill-opacity:.65;}
+.aih-float .aih-colorbar {padding:4px 6px;gap:3px;border-radius:999px;corner-shape:round;}
+body .aih-float .aih-colorbar button.aih-swatch {display:flex;align-items:center;justify-content:center;min-width:26px;width:26px;min-height:26px;height:26px;padding:4px;border:0;border-radius:50%;corner-shape:round;background:var(--aih-swatch);background-clip:content-box;color:#292724;font-size:13px;font-family:system-ui;line-height:1;box-shadow:none;cursor:pointer;transform:none;}
+body .aih-float .aih-colorbar button.aih-swatch[aria-pressed=true] {outline:2px solid #fff8;outline-offset:2px;}
+.aih-sidebar {padding:16px;}.aih-sidebar select {max-width:100%;}
+.aih-entry {padding:10px 0;border-bottom:1px solid var(--background-modifier-border);}
+body .aih-sidebar button.aih-entry-link {display:block;white-space:pre-wrap;height:auto;width:100%;padding:8px 10px;text-align:start;font-size:var(--font-ui-medium);font-family:inherit;line-height:1.6;border:0;border-inline-start:3px solid var(--aih-color);border-radius:0;background:transparent;color:var(--text-normal);box-shadow:none;overflow-wrap:anywhere;cursor:pointer;}
+.aih-entry-link:hover {background:var(--background-modifier-hover);}.aih-entry small,.aih-empty,.aih-count {color:var(--text-muted);}
+.aih-sidebar h4 {overflow-wrap:anywhere;font-size:var(--font-ui-small);}.aih-entry small {display:block;margin-top:4px;}
+.aih-float button:focus-visible,.aih-entry-link:focus-visible {outline:2px solid var(--interactive-accent);outline-offset:2px;}
+@media(pointer:coarse){body .aih-float .aih-toolbar button.aih-tool {min-width:34px;width:34px;min-height:34px;height:34px;}.aih-float .aih-colorbar {gap:4px;}body .aih-float .aih-colorbar button.aih-swatch {min-width:28px;width:28px;min-height:28px;height:28px;padding:5px;}}
+@media(prefers-reduced-motion:no-preference){.aih-tool .aih-icon-accent,.aih-tool .aih-icon-tint{transition:stroke .12s,fill .12s;}}
+
+.aih-entry-meta {display:flex;gap:6px;align-items:center;margin-top:4px;}.aih-entry-dot {display:inline-block;width:10px;height:10px;border-radius:50%;corner-shape:round;flex-shrink:0;}.aih-entry-meta small {margin-top:0;}
+
+.aih-float[data-palette-side="above"] .aih-colorbar {order:-1;}
+.aih-float[data-palette-side="below"] .aih-colorbar {order:1;}
+
+/* Match the detached palette to the action bar without enlarging its shell. */
+.aih-float .aih-colorbar {width:var(--aih-toolbar-width,146px);gap:2px;padding:4px 5px;}
+body .aih-float .aih-colorbar button.aih-swatch {flex:1 1 0;min-width:0;width:0;padding:4px;aspect-ratio:1;height:auto;min-height:0;}
+@media(pointer:coarse){.aih-float .aih-colorbar {gap:2px;}body .aih-float .aih-colorbar button.aih-swatch {min-width:0;width:0;min-height:0;height:auto;padding:4px;}}
+
+/* Current-note outline; annotation colors stay stable during hover/focus. */
+.aih-sidebar .aih-note-name {font-weight:600;color:var(--text-normal);overflow-wrap:anywhere;margin:0 0 12px;}
+.aih-sidebar .aih-sidebar-actions {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px;}
+.aih-sidebar .aih-copy-highlights {font-size:var(--font-ui-small,13px);}
+.aih-sidebar .aih-entry {padding:4px 0;border:0;}
+body .aih-sidebar button.aih-entry-link {border-radius:0 8px 8px 0;border-inline-start:3px solid var(--aih-color);padding:7px 10px;font-weight:400;line-height:1.5;}
+body .aih-sidebar button.aih-entry-link:is(:hover,:focus-visible,:active) {background:var(--background-modifier-hover);color:var(--text-normal);border-inline-start:3px solid var(--aih-color);box-shadow:none;transform:none;}
+.aih-heading-group {margin:6px 0;}
+.aih-sidebar .aih-heading-label {cursor:pointer;user-select:none;padding:7px 4px;border-radius:6px;font-weight:600;color:var(--text-normal);overflow-wrap:anywhere;}
+.aih-sidebar .aih-heading-label:hover {background:var(--background-modifier-hover);}
+.aih-heading-count {font-size:var(--font-ui-smaller,12px);color:var(--text-muted);font-weight:400;margin-inline-start:8px;}
+.aih-heading-children {padding-inline-start:14px;margin-inline-start:5px;border-inline-start:1px solid var(--background-modifier-border);min-width:0;}
+.aih-outline {min-width:0;}.aih-heading-text {overflow-wrap:anywhere;}
+
+/* Sidebar filters use stable color IDs and the same original style icons. */
+.aih-filters {margin:0 0 16px;border-bottom:1px solid var(--background-modifier-border);padding-bottom:8px;}
+.aih-filter-controls {padding:4px 2px 10px;}.aih-filter-hint,.aih-filter-preview {font-size:var(--font-ui-small,13px);color:var(--text-muted);margin:8px 0;}
+.aih-filter-label {font-size:var(--font-ui-small,13px);font-weight:600;margin:12px 0 6px;}
+.aih-filter-options {display:flex;gap:8px;flex-wrap:wrap;}
+body .aih-sidebar .aih-filter-type,body .aih-sidebar .aih-filter-color {display:flex;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;padding:5px;border:1px solid var(--background-modifier-border);border-radius:9px;background:transparent;box-shadow:none;color:var(--text-normal);}
+.aih-filter-type svg {width:22px;height:22px;pointer-events:none;}
+body .aih-sidebar .aih-filter-color {border-radius:50%;background:var(--aih-swatch);background-clip:content-box;padding:5px;}
+body .aih-sidebar .aih-filter-type[aria-pressed=true],body .aih-sidebar .aih-filter-color[aria-pressed=true] {outline:2px solid var(--interactive-accent);outline-offset:2px;}
+body .aih-sidebar .aih-filter-type:is(:hover,:focus-visible) {background:var(--background-modifier-hover);}
+.aih-filter-actions {display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+body .aih-sidebar button.aih-entry-link.aih-style-row,body .aih-sidebar button.aih-entry-link.aih-style-row:is(:hover,:focus-visible,:active) {display:flex;align-items:flex-start;gap:9px;border:0;border-radius:8px;padding:8px 6px;}
+.aih-entry-style {display:inline-flex;flex-shrink:0;width:20px;height:24px;align-items:center;color:var(--aih-color);}
+.aih-entry-style svg {width:20px;height:20px;pointer-events:none;}
+.aih-entry-text {min-width:0;overflow-wrap:anywhere;}
+
+/* Export selection and circular style badges. */
+body .aih-sidebar .aih-export-toggle,body .aih-sidebar .aih-export-action,body .aih-sidebar .aih-export-cancel {display:inline-flex;align-items:center;justify-content:center;gap:6px;height:auto;white-space:normal;padding:6px 10px;font-size:var(--font-ui-small,13px);}
+.aih-export-toggle svg,.aih-export-action svg,.aih-export-cancel svg {width:17px;height:17px;flex-shrink:0;}
+.aih-export-box {padding:10px 0 14px;margin-bottom:10px;border-bottom:1px solid var(--background-modifier-border);}
+.aih-export-actions {display:flex;flex-wrap:wrap;gap:8px;}
+.aih-select-all {display:flex;align-items:center;gap:8px;font-size:var(--font-ui-small,13px);}
+.aih-selected-count {font-size:var(--font-ui-small,13px);color:var(--text-muted);margin:10px 0;}
+.aih-sidebar .aih-selectable-row {display:flex;align-items:center;gap:6px;}
+body .aih-sidebar button.aih-entry-link.aih-style-row {flex:1;min-width:0;}
+.aih-export-check {flex:0 0 auto;margin-inline:2px 0;}
+body .aih-sidebar .aih-filter-type {border-radius:50%;background:var(--background-modifier-hover);}
+.aih-entry-style {width:28px;height:28px;justify-content:center;border-radius:50%;background:var(--aih-color);color:#453824;}
+.aih-entry-style svg {width:20px;height:20px;}
+.aih-style-row {--aih-icon-ink:#453824;}.aih-entry-style {color:var(--aih-icon-ink);}
+
+/* Flat reading order and native centered dialogs. */
+.aih-flat-group {margin:14px 0;}.aih-flat-heading {font-weight:700;color:var(--text-muted);font-size:var(--font-ui-small,13px);margin:0 0 7px;padding:0 6px;overflow-wrap:anywhere;}
+.aih-sidebar-icon-actions {display:flex;gap:8px;}
+body .aih-sidebar button.aih-panel-icon {display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:6px;border-radius:50%;color:var(--text-normal);background:transparent;box-shadow:none;}
+.aih-panel-icon svg {width:21px;height:21px;}
+.aih-sidebar .aih-entry-style,.aih-dialog .aih-entry-style {width:28px;height:28px;border-radius:50%;background:var(--aih-badge);color:var(--aih-badge-ink);align-items:center;justify-content:center;}
+body .aih-sidebar button.aih-style-row,body .aih-dialog button.aih-style-row {margin:0;text-align:start;align-items:flex-start;justify-content:flex-start;white-space:pre-wrap;}
+.aih-entry-text {flex:1;text-align:start;}
+.modal.aih-dialog {width:min(440px,calc(100vw - 32px));padding:22px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 48px);margin:0;}
+.aih-dialog .aih-dialog-content {min-width:0;max-height:calc(100dvh - 130px);overflow:auto;padding:2px;}
+.aih-dialog h2 {margin:0 0 6px;font-size:var(--font-ui-large,20px);}
+.aih-dialog-note {margin:0 0 16px;color:var(--text-muted);overflow-wrap:anywhere;}
+.aih-dialog .aih-dialog-actions {display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px;padding:4px 2px 8px;}
+body .aih-dialog button.aih-dialog-action {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;flex:1;min-width:90px;max-width:180px;min-height:78px;height:auto;padding:12px 8px;white-space:normal;font-size:var(--font-ui-small,13px);border-radius:16px;}
+.aih-dialog-action svg {width:24px;height:24px;flex-shrink:0;}.aih-dialog-action span {text-align:center;line-height:1.4;}
+body .aih-dialog button.mod-warning {background:var(--animal-error,var(--background-modifier-error));color:var(--text-on-accent,#fffdf3);}
+.aih-dialog .aih-filter-options {display:flex;flex-wrap:wrap;gap:10px;}
+body .aih-dialog button.aih-filter-type,body .aih-dialog button.aih-filter-color {display:flex;align-items:center;justify-content:center;width:38px;height:38px;padding:7px;border:1px solid var(--background-modifier-border);border-radius:50%;box-shadow:none;background:var(--background-modifier-hover);color:var(--text-normal);}
+body .aih-dialog button.aih-filter-color {background:var(--aih-swatch);background-clip:content-box;}
+.aih-dialog .aih-filter-type svg {width:23px;height:23px;}
+.aih-dialog [aria-pressed=true] {outline:2px solid var(--interactive-accent);outline-offset:2px;}
+.aih-dialog .aih-selectable-row {display:flex;align-items:center;gap:8px;padding:4px 0;}
+body .aih-dialog button.aih-style-row {display:flex;gap:10px;flex:1;min-width:0;height:auto;padding:8px 6px;border:0;border-radius:8px;background:transparent;color:var(--text-normal);box-shadow:none;line-height:1.5;font-weight:400;overflow-wrap:anywhere;}
+body .aih-dialog button.aih-style-row:hover {background:var(--background-modifier-hover);transform:none;}
+.aih-dialog .aih-export-list {max-height:42dvh;overflow:auto;margin:10px 0;}
+.aih-dialog .aih-export-check {flex:0 0 auto;margin:0 6px 0 0;}
+@media(max-width:420px){body .aih-dialog button.aih-dialog-action {min-width:72px;padding:10px 5px;font-size:12px;}.aih-dialog .aih-dialog-actions{gap:6px;}.aih-dialog .aih-dialog-content{max-height:calc(100dvh - 100px);}}
+
+.aih-entry-style,body .aih-dialog button.aih-filter-type,body .aih-dialog button.aih-filter-color,body .aih-sidebar button.aih-panel-icon {corner-shape:round;}
+.aih-entry-text {padding-top:2px;}
+
+/* Mobile dialogs slide up from the bottom; the grip owns the drag gesture. */
+.aih-sheet-handle {display:none;}
+@media(max-width:700px),(pointer:coarse){
+ .modal-container.aih-dialog-container {align-items:flex-end;justify-content:center;padding:0;}
+ .modal.aih-dialog {position:relative;width:100%;max-width:100%;max-height:calc(100dvh - 16px);margin:0;border-radius:24px 24px 0 0;padding:24px 20px max(20px,env(safe-area-inset-bottom));padding-top:38px;animation:aih-sheet-in 200ms ease-out;will-change:transform;}
+ .aih-dialog .aih-dialog-content {max-height:calc(100dvh - 100px);}
+ .aih-sheet-handle {display:flex;position:absolute;top:0;left:0;right:0;height:32px;align-items:center;justify-content:center;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
+ .aih-sheet-handle::after {content:'';display:block;width:38px;height:4px;border-radius:999px;background:var(--text-faint,var(--text-muted));opacity:.65;}
+ .aih-sheet-handle:active {cursor:grabbing;}
+}
+@keyframes aih-sheet-in {from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.modal.aih-dialog{animation:none;}}
+
+/* Filter actions share a single grid and equal visual depth in every state. */
+.aih-dialog .aih-filter-dialog-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;width:100%;max-width:none;box-sizing:border-box;margin:14px auto 0;padding-inline:0;gap:10px;}
+body .aih-dialog .aih-filter-dialog-actions button.aih-dialog-action {box-sizing:border-box;width:100%;min-width:0;max-width:none;height:58px;min-height:58px;padding:7px 8px;gap:3px;font-size:12px;border:1px solid var(--background-modifier-border);box-shadow:0 3px 0 var(--animal-border,var(--background-modifier-border));}
+body .aih-dialog .aih-filter-dialog-actions button.mod-cta {border-color:transparent;box-shadow:0 3px 0 var(--aih-cta-depth);}
+body .aih-dialog .aih-filter-dialog-actions button.aih-dialog-action:hover {transform:translateY(-1px);box-shadow:0 4px 0 var(--animal-border,var(--background-modifier-border));}
+body .aih-dialog .aih-filter-dialog-actions button.mod-cta:hover {box-shadow:0 4px 0 var(--aih-cta-depth);}
+body .aih-dialog .aih-filter-dialog-actions button.aih-dialog-action:active {transform:translateY(2px);box-shadow:0 1px 0 var(--animal-border,var(--background-modifier-border));}
+body .aih-dialog .aih-filter-dialog-actions button.mod-cta:active {box-shadow:0 1px 0 var(--aih-cta-depth);}
+
+ .aih-dialog .aih-filter-dialog-actions button svg {width:18px;height:18px;}
+ .aih-dialog .aih-filter-dialog-actions button span {line-height:1.3;}
+
+/* Plain full-size color circles: selection is indicated inside, without a ring. */
+body .aih-dialog button.aih-filter-type,body .aih-dialog button.aih-filter-color {box-sizing:border-box;width:38px;height:38px;min-width:38px;min-height:38px;}
+body .aih-dialog button.aih-filter-color,body .aih-dialog button.aih-filter-color:is(:hover,[aria-pressed=true]) {padding:0;border:0;outline:none;box-shadow:none;background:var(--aih-swatch);background-clip:border-box;transform:none;color:var(--aih-swatch-ink);}
+.aih-filter-check {visibility:hidden;font:700 20px/1 system-ui;pointer-events:none;}
+.aih-filter-color[aria-pressed=true] .aih-filter-check {visibility:visible;}
+body .aih-dialog button.aih-filter-color:focus-visible {box-shadow:inset 0 0 0 2px var(--aih-swatch-ink);}
+
+/* Export stays in the sidebar: scrollable results above a compact bottom tray. */
+.aih-sidebar {display:flex;flex-direction:column;height:100%;min-height:0;box-sizing:border-box;overflow:hidden;}
+.aih-sidebar>h3,.aih-sidebar>.aih-note-name,.aih-sidebar>.aih-sidebar-actions,.aih-sidebar>.aih-empty {flex:0 0 auto;}
+.aih-sidebar>.aih-flat-list {flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;}
+.aih-export-footer {flex:0 0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;margin-top:10px;border:1px solid var(--background-modifier-border);border-radius:14px;background:var(--background-secondary);box-shadow:0 -3px 12px #00000008;}
+body .aih-sidebar button.aih-export-footer-action {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-sizing:border-box;width:100%;height:60px;min-height:60px;padding:7px 6px;min-width:0;white-space:normal;font-size:12px;line-height:1.3;border-radius:16px;background:var(--interactive-normal);color:var(--text-normal);border:1px solid var(--background-modifier-border);box-shadow:0 3px 0 var(--animal-border,var(--background-modifier-border));}
+.aih-export-footer-action svg {width:20px;height:20px;flex-shrink:0;}.aih-export-footer-action span {text-align:center;}
+body .aih-sidebar button.aih-panel-icon.aih-export-exit {background:var(--animal-error,var(--background-modifier-error));color:#fffdf3;border:0;box-shadow:none;}
+.aih-sidebar .aih-export-check {flex:0 0 auto;margin-inline:6px 4px;accent-color:var(--interactive-accent);}
+
+/* Export hover belongs to the whole selection row, including its checkbox. */
+.aih-sidebar .aih-export-row {border-radius:8px;}
+.aih-sidebar .aih-export-row:hover {background:var(--background-modifier-hover);}
+body .aih-sidebar .aih-export-row button.aih-style-row:is(:hover,:focus-visible) {background:transparent;}
+
+/* Plugin notifications inherit the active theme. */
+.notice.aih-notice {background:var(--background-secondary);color:var(--text-normal);border:1px solid var(--background-modifier-border);box-shadow:0 4px 16px var(--background-modifier-box-shadow);}
+
+body .aih-sidebar button.aih-export-footer-action:not(:disabled):hover {background:var(--interactive-hover,var(--interactive-normal));transform:translateY(-1px);box-shadow:0 4px 0 var(--animal-border,var(--background-modifier-border));}
+body .aih-sidebar button.aih-export-footer-action:not(:disabled):active {transform:translateY(2px);box-shadow:0 1px 0 var(--animal-border,var(--background-modifier-border));}
+
+/* Neutral raised actions darken within their warm palette on hover. */
+body .aih-dialog .aih-filter-dialog-actions button.aih-dialog-action:not(.mod-cta):not(:disabled):hover,
+body .aih-sidebar button.aih-export-footer-action:not(:disabled):hover {
+ background:color-mix(in srgb,var(--interactive-normal) 25%,#513820);
+ color:#fff;
+ border-color:color-mix(in srgb,var(--interactive-normal) 25%,#513820);
+}
+body .aih-dialog .aih-filter-dialog-actions button.aih-dialog-action:not(.mod-cta):not(:disabled):hover :is(svg,span),
+body .aih-sidebar button.aih-export-footer-action:not(:disabled):hover :is(svg,span) {color:inherit;}
+
+/* Respond to the sidebar width, including narrow desktop panes. */
+.aih-sidebar {container-type:inline-size;container-name:aih-sidebar;}
+@container aih-sidebar (max-width:340px) {
+ .aih-export-footer {grid-template-columns:minmax(0,1fr);gap:9px;}
+ body .aih-sidebar button.aih-export-footer-action {height:54px;min-height:54px;}
+}
+
+/* One alignment grid for the plugin's settings, independent of the active theme. */
+.aih-settings {--aih-settings-inset:20px;container-type:inline-size;container-name:aih-settings;}
+body .aih-settings > :is(h2,h3,p) {box-sizing:border-box;margin-inline:0;padding-inline:var(--aih-settings-inset);width:100%;text-align:start;}
+body .aih-settings > h2 {margin-block:0 12px;}
+body .aih-settings > h3 {margin-block:24px 8px;}
+body .aih-settings > p {margin-block:0 18px;overflow-wrap:anywhere;}
+body .aih-settings > .setting-item {box-sizing:border-box;width:100%;margin-inline:0;padding:18px var(--aih-settings-inset);display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,230px);gap:20px;align-items:center;}
+.aih-settings .setting-item-info {min-width:0;margin:0;}
+.aih-settings .setting-item-name,.aih-settings .setting-item-description {overflow-wrap:anywhere;}
+body .aih-settings .setting-item-control {min-width:0;width:100%;justify-content:flex-end;gap:12px;padding:0;}
+body .aih-settings .setting-item-control select {box-sizing:border-box;width:auto;max-width:100%;min-width:0;}
+.aih-settings .setting-item-control input[type=range] {min-width:0;max-width:100%;flex:1;}
+@container aih-settings (max-width:520px) {
+ body .aih-settings > .setting-item {grid-template-columns:minmax(0,1fr);gap:12px;}
+ body .aih-settings .setting-item-control {justify-content:flex-start;}
+}
+
+.aih-sidebar .aih-sidebar-actions {flex-wrap:nowrap;}
+.aih-selection-summary {display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-width:0;}
+.aih-sidebar-icon-actions {flex-shrink:0;margin-inline-start:auto;}
+body .aih-sidebar button.aih-deselect-all {width:auto;height:auto;min-height:28px;padding:2px 0;font-size:var(--font-ui-small,13px);white-space:normal;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--text-normal);font-weight:600;}
+body .aih-sidebar button.aih-deselect-all:not(:disabled):hover {background:transparent;color:color-mix(in srgb,var(--interactive-normal) 25%,#513820);text-decoration:underline;box-shadow:none;transform:none;}
+
+/* Derive CTA depth from the current theme accent, never a fixed teal fallback. */
+.aih-dialog {--aih-cta-depth:color-mix(in srgb,var(--interactive-accent) 75%,#000);}
+
+.aih-dialog {transition:none;transform:translateY(var(--aih-sheet-y,0px));}
+body .aih-settings > .setting-item.aih-settings-heading {display:block;background:transparent;border:0;border-radius:0;box-shadow:none;margin-block:0 12px;padding-block:0;}
+body .aih-settings > .setting-item.aih-settings-heading:not(:first-child) {margin-top:24px;}
+.aih-settings .aih-settings-heading .setting-item-name {font-size:var(--font-ui-large);}
+
+.aih-dialog.aih-sheet-settling {transition:transform 180ms ease;}
