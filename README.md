@@ -4,7 +4,7 @@ Keep the words that matter. Highlight, underline, and collect passages in Obsidi
 
 [繁體中文](README.zh-TW.md) · [Get the release](https://github.com/tiffanyiong/easy-text-highlighter/releases/latest)
 
-[Use](#use) · [Highlights](#highlights) · [Filter--export](#filter--export) · [Customize](#customize) · [Install](#install) · [Your-data](#your-data)
+[Use](#use) · [PDF](#pdf) · [Highlights](#highlights) · [Filter--export](#filter--export) · [Customize](#customize) · [Install](#install) · [Your-data](#your-data)
 
 ![Easy Text Highlighter with Animal Island Cozy](docs/cozy-overview.jpg)
 
@@ -20,6 +20,14 @@ Click an existing highlight to edit it. To remove it, click the same pen with th
 
 ![Selection toolbar and color palette](docs/cozy-toolbar.jpg)
 
+## PDF
+
+Select text in Obsidian’s PDF reader and use the same pens and colors. The sidebar groups excerpts by page; click an excerpt to return to its passage. Copy or create Markdown with links to the source PDF pages.
+
+The PDF is never modified. Marks live in plugin data and appear while this plugin is enabled. Scanned PDFs need a selectable text layer; OCR is not included.
+
+![PDF annotations and page-organized highlights](docs/pdf-preview.jpg)
+
 ## Highlights
 
 Open **Highlights** using the ribbon icon or the command palette. The sidebar follows the active note and lists excerpts under their nearest heading, in document order. Each excerpt keeps its color and pen style. Click it to return to the passage.
@@ -33,7 +41,7 @@ Filter by multiple pen styles and colors. Empty selections mean all; **Reset** r
 Choose **Export**, then select excerpts using the rows or their checkboxes. All visible results start selected. **Select All / Deselect All** affects the filtered list.
 
 - **Copy** puts a heading-organized Markdown summary on your clipboard.
-- **Create Markdown** saves a new note beside the original, using a numbered name if needed.
+- **Create Markdown** saves a new note beside the original, using a numbered name if needed. A source link at the top returns to the original note and creates an Obsidian backlink.
 - The red **X** exits export mode.
 
 ![Select and export excerpts in the sidebar](docs/cozy-export.jpg)

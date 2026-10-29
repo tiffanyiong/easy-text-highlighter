@@ -40,3 +40,38 @@ npm run check
 ```
 
 Screenshots are actual Obsidian captures, not generated mockups. Animal Island Cozy is used for the main gallery; `default-overview.jpg` and `default-filter.jpg` show the default theme.
+
+## Local follow-up — 1.0.1 (unreleased)
+
+- 85 tests pass, including source-link generation from the final destination filename, localized source labels and Markdown-link preferences; clipboard content remains unchanged.
+- Actual Obsidian export created `Welcome to Easy Text Highlighter - Highlights 2.md` with `Source: [[Welcome to Easy Text Highlighter]]`. Original-note backlink count changed from zero to one. Clicking the generated source link returned to the original note.
+- Release metadata/build checks pass; official lint still has zero errors and 23 advisory warnings. Not pushed to GitHub or released.
+
+
+## 1.1.0 PDF local preview — 2026-10-28
+
+Not published. Public GitHub release remains 1.0.0. Installed in the dedicated Easy Text Highlighter Release QA vault only.
+
+- 90 automated tests pass, including the existing Markdown behavior and PDF create/recolor/overlap isolation, multipage records, palette synchronization, sidebar grouping, and Markdown page links.
+- Build and release checks pass; lint has zero errors and 23 existing warnings.
+- Actual Obsidian 1.14.5: three PDF styles render correctly; a native PDF page-border offset discovered during visual inspection was fixed by measuring the overlay content box rather than the page border box. See `pdf-preview.jpg`.
+- Actual sidebar navigation reaches page 2 and centers the passage without opening the annotation toolbar. See `pdf-jump.jpg`.
+- Clicking the page-2 marked text opens the existing toolbar. Recolor to pink retains the same ID and one entry; Command Z restores yellow (slot-2), verified in persisted data.json.
+- Native Create Markdown generated `PDF Highlighter QA - Highlights.md` with four excerpts and source links to pages 1 and 2. Original PDF SHA-256 before/after: `f93aec9492d0897ef2eacf9a5b95b94c548c511feb3164f4de0d6809c9df7e3d`.
+- User confirmed that selecting new PDF text shows the toolbar. Automated native dragging was unreliable due to multi-monitor coordinates.
+- Separate browser text-layer integration fixture verified new selection, annotation creation, one-character/click targeting, style change, recolor + undo, zoom geometry, reloading persisted records, and export links. This fixture is not presented as a native PDF screenshot.
+- Physical mobile PDF and scanned/OCR files were not tested. This feature requires selectable PDF text; no OCR or embedded-PDF support is claimed.
+
+
+## Mobile simulation — 2026-10-28 (unreleased)
+
+- Actual Obsidian 1.14.5 official mobile emulation tested at 390×844 and 320×568 with Animal Island Cozy. This is desktop emulation, not a physical iPhone or Android test.
+- PDF sidebar displays five saved records. Export initially selects all five; narrow export actions stack without clipping.
+- Filter sheet fits both sizes, including five colors and equal-sized Reset/Confirm actions. Highlighter filter gives two matches; Reset restores all five and keeps the sheet open.
+- Tapping a sidebar excerpt closes the mobile drawer and returns to PDF page 2 without opening the annotation toolbar.
+- Separate responsive fixture verifies stacked export actions at 320 px, equal side-by-side actions at 390 px, filtering/reset, and dragging the sheet down to dismiss.
+- Screenshot `mobile-filter-320.jpg` is cropped from actual Obsidian emulation. Native long-press text selection and iOS selection handles remain unverified.
+- Restored desktop mode and disabled device emulation after testing. No production code changes or publication in this test session.
+
+### Correction: desktop restoration
+The initial desktop-restoration claim above was premature: the device viewport was off, but mobile/tablet body classes remained. Subsequently disabled official mobile emulation and verified body.className no longer contains emulate-mobile, is-mobile, or is-tablet; visually confirmed the desktop UI. No theme CSS changes. Publication remains paused.

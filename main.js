@@ -3,6 +3,7 @@ const {LANGUAGES,TRANSLATIONS,locale}=(()=>{const module={exports:{}};
 const LANGUAGES={"auto": "Auto", "en": "English", "zh": "繁體中文", "zh-CN": "简体中文", "ja": "日本語", "ko": "한국어", "es": "Español", "fr": "Français", "de": "Deutsch", "pt": "Português", "it": "Italiano"};
 const TRANSLATIONS={
   "zh-CN": {
+    "page": "页",
     "filterTitle": "筛选你的摘录",
     "swipeClose": "向下拖动关闭",
     "exportHighlights": "导出摘录",
@@ -57,9 +58,11 @@ const TRANSLATIONS={
     "copied": "已复制",
     "failed": "无法保存摘录，请保持插件启用并重试。",
     "export": "导出摘录",
-    "deselectAll": "取消全选"
+    "deselectAll": "取消全选",
+    "sourceNote": "来源"
   },
   "ja": {
+    "page": "ページ",
     "filterTitle": "ハイライトを絞り込む",
     "swipeClose": "下にドラッグして閉じる",
     "exportHighlights": "ハイライトをエクスポート",
@@ -114,9 +117,11 @@ const TRANSLATIONS={
     "copied": "コピーしました",
     "failed": "保存できません。プラグインを有効にしたまま再試行してください。",
     "export": "ハイライトをエクスポート",
-    "deselectAll": "すべて選択解除"
+    "deselectAll": "すべて選択解除",
+    "sourceNote": "出典"
   },
   "ko": {
+    "page": "페이지",
     "filterTitle": "하이라이트 필터",
     "swipeClose": "아래로 끌어 닫기",
     "exportHighlights": "하이라이트 내보내기",
@@ -171,9 +176,11 @@ const TRANSLATIONS={
     "copied": "복사됨",
     "failed": "저장하지 못했습니다. 플러그인을 활성화한 상태로 다시 시도하세요.",
     "export": "하이라이트 내보내기",
-    "deselectAll": "모두 선택 해제"
+    "deselectAll": "모두 선택 해제",
+    "sourceNote": "출처"
   },
   "es": {
+    "page": "Página",
     "filterTitle": "Filtrar tus resaltados",
     "swipeClose": "Arrastra hacia abajo para cerrar",
     "exportHighlights": "Exportar resaltados",
@@ -228,9 +235,11 @@ const TRANSLATIONS={
     "copied": "Copiado",
     "failed": "No se pudo guardar. Mantén el complemento activado e inténtalo de nuevo.",
     "export": "Exportar resaltados",
-    "deselectAll": "Deseleccionar todo"
+    "deselectAll": "Deseleccionar todo",
+    "sourceNote": "Fuente"
   },
   "fr": {
+    "page": "Page",
     "filterTitle": "Filtrer vos surlignages",
     "swipeClose": "Glissez vers le bas pour fermer",
     "exportHighlights": "Exporter les surlignages",
@@ -285,9 +294,11 @@ const TRANSLATIONS={
     "copied": "Copié",
     "failed": "Échec de l’enregistrement. Gardez le module activé et réessayez.",
     "export": "Exporter les surlignages",
-    "deselectAll": "Tout désélectionner"
+    "deselectAll": "Tout désélectionner",
+    "sourceNote": "Source"
   },
   "de": {
+    "page": "Seite",
     "filterTitle": "Markierungen filtern",
     "swipeClose": "Zum Schließen nach unten ziehen",
     "exportHighlights": "Markierungen exportieren",
@@ -342,9 +353,11 @@ const TRANSLATIONS={
     "copied": "Kopiert",
     "failed": "Speichern fehlgeschlagen. Plugin aktiviert lassen und erneut versuchen.",
     "export": "Markierungen exportieren",
-    "deselectAll": "Alles abwählen"
+    "deselectAll": "Alles abwählen",
+    "sourceNote": "Quelle"
   },
   "pt": {
+    "page": "Página",
     "filterTitle": "Filtrar destaques",
     "swipeClose": "Arraste para baixo para fechar",
     "exportHighlights": "Exportar destaques",
@@ -399,9 +412,11 @@ const TRANSLATIONS={
     "copied": "Copiado",
     "failed": "Não foi possível salvar. Mantenha o plugin ativo e tente novamente.",
     "export": "Exportar destaques",
-    "deselectAll": "Desmarcar tudo"
+    "deselectAll": "Desmarcar tudo",
+    "sourceNote": "Origem"
   },
   "it": {
+    "page": "Pagina",
     "filterTitle": "Filtra evidenziazioni",
     "swipeClose": "Trascina in basso per chiudere",
     "exportHighlights": "Esporta evidenziazioni",
@@ -456,7 +471,8 @@ const TRANSLATIONS={
     "copied": "Copiato",
     "failed": "Salvataggio non riuscito. Mantieni il plugin attivo e riprova.",
     "export": "Esporta evidenziazioni",
-    "deselectAll": "Deseleziona tutto"
+    "deselectAll": "Deseleziona tutto",
+    "sourceNote": "Fonte"
   }
 };
 function locale(raw){
@@ -666,6 +682,42 @@ function editorSelectionBounds(source,selected,candidates){
 module.exports.editorSelectionBounds=editorSelectionBounds;
 
 return module.exports;})();
+const {PdfSupport,pdfPartsValid,pdfContains,pdfSelected,pdfTree,pdfUpsert}=(()=>{const module={exports:{}};
+// PDF annotations live only in plugin data. PDF bytes and text-layer nodes stay untouched.
+
+function pdfPartsValid(parts){return Array.isArray(parts)&&parts.length>0&&parts.every(p=>Number.isInteger(p.page)&&p.page>0&&Number.isInteger(p.from)&&Number.isInteger(p.to)&&p.from>=0&&p.to>p.from&&typeof p.quote==='string'&&p.quote.length>0);}
+function pdfContains(record,pending){return pending.parts.every(p=>record.parts.some(r=>r.page===p.page&&r.from<=p.from&&r.to>=p.to));}
+function pdfIntersects(a,b){return a.parts.some(p=>b.parts.some(q=>p.page===q.page&&p.from<q.to&&p.to>q.from));}
+function pdfSelected(records,pending){return records.filter(r=>r.kind==='pdf'&&r.path===pending.path&&pdfIntersects(r,pending)).sort((a,b)=>(b.updated||0)-(a.updated||0))[0];}
+function pdfTree(records,pageLabel){const pages=new Map();for(const r of records){const page=r.parts[0].page;if(!pages.has(page))pages.set(page,[]);pages.get(page).push(r);}return {id:'root',level:0,title:'',items:[],count:records.length,children:[...pages].sort(([a],[b])=>a-b).map(([page,items])=>({id:'pdf:'+page,level:1,title:pageLabel+' '+page,items:items.sort((a,b)=>a.parts[0].from-b.parts[0].from),children:[],count:items.length}))};}
+function pdfUpsert(records,pending,texts,change,defaults,id,now=Date.now()){
+ let parts=pending.parts.map(p=>({...p}));const covered=[];let grew;
+ do{grew=false;for(const r of records){if(r.kind!=='pdf'||r.path!==pending.path||covered.includes(r)||!pdfIntersects({parts},r))continue;covered.push(r);parts.push(...r.parts);grew=true;}}while(grew);
+ const pages=[...new Set(parts.map(p=>p.page))].sort((a,b)=>a-b),merged=[];
+ for(const page of pages){const text=texts.get(page);if(typeof text!=='string'){if(pending.id&&covered.some(r=>r.id===pending.id)){merged.push(...parts.filter(p=>p.page===page).filter((p,i,a)=>a.findIndex(q=>q.from===p.from&&q.to===p.to)===i));continue;}if(!pending.parts.some(p=>p.page===page)){merged.push(...parts.filter(p=>p.page===page));continue;}return null;}const ranges=parts.filter(p=>p.page===page).map(p=>resolve(p,text));if(ranges.some(p=>!p))return null;ranges.sort((a,b)=>a.from-b.from);const unions=[];for(const p of ranges){const last=unions.at(-1);if(last&&p.from<=last.to)last.to=Math.max(last.to,p.to);else unions.push({...p});}for(const p of unions)merged.push({page,...anchor(text,p.from,p.to)});}
+ const base=covered.sort((a,b)=>(b.updated||0)-(a.updated||0))[0];const quote=merged.map(p=>p.quote).join('\n');
+ const record={...(base||{id,created:now,color:defaults.color,style:defaults.style}),kind:'pdf',path:pending.path,parts:merged,from:0,to:quote.length,quote,display:quote,...change,updated:now};
+ return {record,records:[...records.filter(r=>!covered.includes(r)),record]};
+}
+function pageText(page){const layer=page.querySelector('.textLayer');if(!layer)return null;const doc=page.ownerDocument,walker=doc.createTreeWalker(layer,5),nodes=[];let text='',n;while((n=walker.nextNode())){if(n.nodeType===1){if(n.tagName==='BR')text+='\n';continue;}if(!n.textContent||n.parentElement.closest('.endOfContent'))continue;nodes.push({node:n,from:text.length,to:text.length+n.textContent.length});text+=n.textContent;}return {layer,nodes,text};}
+function rangeRects(page,model,from,to){const rects=[],doc=page.ownerDocument;for(const n of model.nodes){const a=Math.max(from,n.from),b=Math.min(to,n.to);if(a>=b)continue;const range=doc.createRange();range.setStart(n.node,a-n.from);range.setEnd(n.node,b-n.from);for(const r of range.getClientRects())if(r.width>.1&&r.height>.1)rects.push(r);}return rects;}
+function pdfCapture(view,range){const parts=[],texts=new Map();for(const page of view.contentEl.querySelectorAll('.page[data-page-number]')){if(!range.intersectsNode(page))continue;const number=Number(page.dataset.pageNumber),model=pageText(page);if(!model?.text||!Number.isInteger(number)||number<1)continue;let from=Infinity,to=-Infinity;for(const n of model.nodes){if(!range.intersectsNode(n.node))continue;const a=range.startContainer===n.node?range.startOffset:0,b=range.endContainer===n.node?range.endOffset:n.node.length;if(b>a){from=Math.min(from,n.from+a);to=Math.max(to,n.from+b);}}if(Number.isFinite(from)&&model.text.slice(from,to).trim()){parts.push({page:number,...anchor(model.text,from,to)});texts.set(number,model.text);}}if(!parts.length)return null;parts.sort((a,b)=>a.page-b.page||a.from-b.from);const quote=parts.map(p=>p.quote).join('\n');return {pending:{kind:'pdf',path:view.file.path,parts,from:0,to:quote.length,quote,display:quote},texts};}
+class PdfSupport{
+ constructor(plugin){this.plugin=plugin;this.frames=[];this.timer=null;const doc=plugin.doc;const Observer=doc.defaultView.MutationObserver;if(Observer){this.observer=new Observer(changes=>{if(changes.some(c=>!c.target.closest?.('.aih-pdf-overlay')&&((c.type==='attributes'&&c.target.closest?.('.pdf-viewer-container'))||[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&(n.matches?.('.page,.textLayer,.textLayerNode')||n.querySelector?.('.textLayer'))))))this.schedule();});this.observer.observe(plugin.app.workspace.containerEl,{childList:true,subtree:true,attributes:true,attributeFilter:['style','data-loaded']});}const Resize=doc.defaultView.ResizeObserver;if(Resize){this.resizeObserver=new Resize(()=>this.schedule());this.resizeObserver.observe(plugin.app.workspace.containerEl);}this.schedule();}
+ schedule(){this.plugin.doc.defaultView.clearTimeout?.(this.timer);this.timer=(this.plugin.doc.defaultView.setTimeout||setTimeout)(()=>this.render(),70);}
+ views(){return this.plugin.app.workspace.getLeavesOfType('pdf').map(l=>l.view).filter(v=>v.file?.extension==='pdf');}
+ capture(range){const view=this.views().find(v=>v.contentEl.contains(range.commonAncestorContainer));return view&&pdfCapture(view,range);}
+ render(){const p=this.plugin;if(p.unloading)return;let relocated=false;this.frames=[];for(const view of this.views())for(const page of view.contentEl.querySelectorAll('.page[data-page-number]')){const model=pageText(page);if(!model?.text)continue;const number=Number(page.dataset.pageNumber),pageBounds=page.getBoundingClientRect();if(!pageBounds.width||!pageBounds.height)continue;page.querySelector('.aih-pdf-overlay')?.remove();const overlay=page.ownerDocument.createElement('div');overlay.className='aih-pdf-overlay';overlay.setAttribute('aria-hidden','true');page.append(overlay);const bounds=overlay.getBoundingClientRect();
+  for(const record of p.records.filter(r=>r.kind==='pdf'&&r.path===view.file.path))for(const part of record.parts.filter(x=>x.page===number)){const resolved=resolve(part,model.text);if(!resolved)continue;if(part.from!==resolved.from||part.to!==resolved.to){Object.assign(part,anchor(model.text,resolved.from,resolved.to));relocated=true;}for(const rect of rangeRects(page,model,resolved.from,resolved.to)){const el=page.ownerDocument.createElement('span');el.className='aih-pdf-mark aih-pdf-'+record.style;el.dataset.aihId=record.id;el.setAttribute('style',p.markStyle(record));Object.assign(el.style,{left:(rect.left-bounds.left)/bounds.width*100+'%',top:(rect.top-bounds.top)/bounds.height*100+'%',width:rect.width/bounds.width*100+'%',height:rect.height/bounds.height*100+'%'});if(record.style==='wave'){const ns='http://www.w3.org/2000/svg',svg=page.ownerDocument.createElementNS(ns,'svg'),path=page.ownerDocument.createElementNS(ns,'path');svg.setAttribute('viewBox',`0 0 ${rect.width} 6`);svg.setAttribute('preserveAspectRatio','none');let d='M0 3';for(let x=0;x<rect.width;x+=8)d+=`q2 -3 4 0t4 0`;path.setAttribute('d',d);svg.append(path);el.append(svg);}overlay.append(el);this.frames.push({el,record,page});}}
+ }if(relocated)p.scheduleSave();}
+ hit(event){for(const f of this.frames){if(!f.el.isConnected)continue;const r=f.el.getBoundingClientRect();if(event.clientX>=r.left&&event.clientX<=r.right&&event.clientY>=r.top&&event.clientY<=r.bottom&&f.page.contains(event.target))return {id:f.record.id,rect:r,x:event.clientX,y:event.clientY};}return null;}
+ texts(pending){const texts=new Map();for(const view of this.views().filter(v=>v.file.path===pending.path))for(const page of view.contentEl.querySelectorAll('.page[data-page-number]')){const model=pageText(page);if(model?.text)texts.set(Number(page.dataset.pageNumber),model.text);}return texts;}
+ async jump(view,record,navigation){const p=this.plugin,pageNumber=record.parts[0].page;view.setEphemeralState?.({subpath:'#page='+pageNumber});for(let i=0;i<16;i++){await new Promise(done=>(p.doc.defaultView.setTimeout||setTimeout)(done,75));if(p.unloading||p.navigationToken!==navigation)return;this.render();const page=view.contentEl.querySelector(`.page[data-page-number="${pageNumber}"]`),scroller=view.contentEl.querySelector('.pdf-viewer-container');if(!page||!scroller)continue;const frames=this.frames.filter(f=>f.record.id===record.id&&f.page===page);if(!frames.length)continue;const rects=frames.map(f=>f.el.getBoundingClientRect()),a=Math.min(...rects.map(r=>r.top)),b=Math.max(...rects.map(r=>r.bottom)),vp=scroller.getBoundingClientRect();scroller.scrollTop+=(a+b)/2-(vp.top+scroller.clientHeight/2);if(i>4)return;}}
+ destroy(){this.plugin.doc.defaultView.clearTimeout?.(this.timer);this.observer?.disconnect();this.resizeObserver?.disconnect();for(const view of this.views())for(const el of view.contentEl.querySelectorAll('.aih-pdf-overlay'))el.remove();this.frames=[];}
+}
+module.exports={PdfSupport,pdfPartsValid,pdfContains,pdfSelected,pdfTree,pdfUpsert,pdfCapture,pageText};
+
+return module.exports;})();
 const TYPE='easy-text-highlights';
 const refresh=StateEffect.define();
 // Independently drawn SVG paths, no external icon/font dependency.
@@ -682,6 +734,8 @@ const ICONS={
  underline:[['path',{d:'M8 5v8a6 6 0 0 0 12 0V5'}],['path',{d:'M5 24h18',class:'aih-icon-accent'}]]};
 function icon(el,kind,removing=false){const ns='http://www.w3.org/2000/svg',svg=el.ownerDocument.createElementNS(ns,'svg');for(const [k,v] of Object.entries({viewBox:'0 0 28 28',width:28,height:28,fill:'none',stroke:'currentColor','stroke-width':1.7,'stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true'}))svg.setAttribute(k,v);for(const [tag,attrs] of ICONS[kind]){const n=el.ownerDocument.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);svg.append(n);}if(removing){const slash=el.ownerDocument.createElementNS(ns,'path');slash.setAttribute('d','M4 4l20 20');slash.setAttribute('class','aih-icon-slash');svg.append(slash);}el.append(svg);}
 const words={
+ page:['Page','頁'],
+ sourceNote:['Source','來源'],
  deselectAll:['Deselect All','取消全選'],
  filterTitle:['Filter your highlights','篩選你的摘錄'],
  swipeClose:['Drag down to close','向下拖曳關閉'],
@@ -704,7 +758,7 @@ class Highlighter extends Plugin {
    const backup=this.manifest.dir+'/data-before-five-slots.json';
    if(!await this.app.vault.adapter.exists(backup))await this.app.vault.adapter.write(backup,JSON.stringify(original,null,2));
   }
-  this.records=data.records.filter(r=>typeof r.id==='string'&&typeof r.path==='string'&&typeof r.quote==='string'&&r.quote.length&&Number.isInteger(r.from)&&Number.isInteger(r.to)&&r.from>=0&&r.to>r.from&&['highlight','underline','wave'].includes(r.style)&&PALETTE.some(c=>c.id===r.color));
+  this.records=data.records.filter(r=>typeof r.id==='string'&&typeof r.path==='string'&&typeof r.quote==='string'&&r.quote.length&&Number.isInteger(r.from)&&Number.isInteger(r.to)&&r.from>=0&&r.to>r.from&&['highlight','underline','wave'].includes(r.style)&&PALETTE.some(c=>c.id===r.color)&&(r.kind!=='pdf'||pdfPartsValid(r.parts)));
   this.dialogs=new Set();this.liveSections=new Map();this.undoStack=[];this.redoStack=[];this.undoArmed=false;this.sections=new Set();this.editors=new Set();this.saveChain=Promise.resolve();this.revision=0;this.selectionToken=0;this.unloading=false;
   this.registerView(TYPE,leaf=>new HighlightsView(leaf,this));
   this.addSettingTab(new HighlightSettings(this.app,this));
@@ -755,6 +809,7 @@ class Highlighter extends Plugin {
    void this.renderSection(entry);
   });
   const doc=this.app.workspace.containerEl.ownerDocument;this.doc=doc;
+  this.pdf=new PdfSupport(this);this.register(()=>this.pdf.destroy());
   if(doc.defaultView.MutationObserver){const observer=new doc.defaultView.MutationObserver(changes=>{if(changes.some(change=>[...change.addedNodes].some(n=>n.nodeType===1&&(n.matches?.('.callout')||n.querySelector?.('.callout')))))this.scheduleLiveCallouts();});observer.observe(this.app.workspace.containerEl,{childList:true,subtree:true});this.register(()=>observer.disconnect());}
   const schedule=()=>{if(this.toolbar)return;clearTimeout(this.selectionTimer);this.selectionTimer=setTimeout(()=>void this.capture(),180);};
   this.registerDomEvent(doc,'selectionchange',schedule);
@@ -766,13 +821,13 @@ class Highlighter extends Plugin {
   this.registerDomEvent(doc,'keyup',e=>{if(e.key==='Escape')this.hide();else if(!this.toolbar?.contains(e.target))schedule();});
   this.registerDomEvent(doc,'pointerdown',e=>{
    if(this.toolbar?.contains(e.target))return;
-   const mark=e.target.closest?.('[data-aih-id]');this.tapMark=mark?{id:mark.dataset.aihId,rect:mark.getBoundingClientRect(),x:e.clientX,y:e.clientY}:null;this.hide();
+   const mark=e.target.closest?.('[data-aih-id]');this.tapMark=mark?{id:mark.dataset.aihId,rect:mark.getBoundingClientRect(),x:e.clientX,y:e.clientY}:this.pdf.hit(e);this.hide();
   },true);
   this.registerDomEvent(doc,'click',e=>this.openClickedMark(e),true);
   this.registerDomEvent(doc,'scroll',e=>{if(this.toolbar&&!this.toolbar.contains(e.target))this.hide();},true);
   this.registerDomEvent(doc.defaultView,'resize',()=>this.position());
   if(doc.defaultView.visualViewport){this.registerDomEvent(doc.defaultView.visualViewport,'resize',()=>this.position());this.registerDomEvent(doc.defaultView.visualViewport,'scroll',()=>this.position());}
-  this.registerEvent(this.app.workspace.on('file-open',()=>{this.hide();this.renderPanels();this.scheduleLiveCallouts();}));
+  this.registerEvent(this.app.workspace.on('file-open',()=>{this.hide();this.renderPanels();this.scheduleLiveCallouts();this.pdf.schedule();}));
   this.registerEvent(this.app.vault.on('rename',(file,old)=>{for(const r of this.records){if(r.path===old||r.path.startsWith(old+'/'))r.path=file.path+r.path.slice(old.length);}this.scheduleSave();this.renderPanels();}));
   // Keep annotations for deleted files, so a vault restore can recover them.
   this.registerEvent(this.app.vault.on('delete',()=>this.renderPanels()));
@@ -783,7 +838,7 @@ class Highlighter extends Plugin {
  notice(message){const notice=new Notice(message);(notice.containerEl||notice.noticeEl?.closest?.('.notice'))?.addClass('aih-notice');return notice;}
  t(key){const language=locale(this.settings.language==='auto'?(getLanguage?.()||this.doc?.documentElement.lang||'en'):this.settings.language);return (language==='zh'?words[key]?.[1]:TRANSLATIONS[language]?.[key])||words[key]?.[0]||key;}
  name(c){return this.t('mark')==='劃線'?c.zh:c.en;}
- displayText(r){return r.display||projectMarkdown(r.quote).text;}
+ displayText(r){return r.display||(r.kind==='pdf'?r.quote:projectMarkdown(r.quote).text);}
  colorHex(r){return slotHex(r,this.settings);}
  markStyle(r){const hex=this.colorHex(r);return `--aih-color:${hex};--aih-tint:${rgba(hex,this.settings.opacity)};--aih-width:${this.settings.width}px;--aih-height:${this.settings.height}px` ;}
  scheduleSave(){clearTimeout(this.saveTimer);this.saveTimer=setTimeout(()=>void this.persist(),250);}
@@ -860,13 +915,14 @@ class Highlighter extends Plugin {
    for(const part of parts){const from=Math.max(0,part.from-ns),to=Math.min(ne-ns,part.to-ns);if(to<node.length)node.splitText(to);const selected=from?node.splitText(from):node;const span=doc.createElement('span');span.className=`aih-mark aih-${part.r.style}`;span.dataset.aihId=part.r.id;span.setAttribute('style',this.markStyle(part.r));selected.replaceWith(span);span.append(selected);}
   }
  }
- redraw(editors=true){if(this.unloading)return;this.revision++;this.scheduleLiveCallouts();if(editors)for(const view of this.editors){try{view.dispatch({effects:refresh.of(this.revision)});}catch(e){console.warn('Highlighter refresh',e);}}for(const s of this.sections)if(s.el.isConnected)void this.renderSection(s);this.renderPanels();if(this.toolbar){const r=this.records.find(x=>x.id===this.toolbar.dataset.highlightId);this.toolbar.style.setProperty('--aih-choice',this.colorHex(r||{color:this.settings.color}));for(const sw of this.toolbar.querySelectorAll('[data-aih-slot]'))sw.style.setProperty('--aih-swatch',this.settings.colors[sw.dataset.aihSlot]);}}
+ redraw(editors=true){if(this.unloading)return;this.pdf?.schedule();this.revision++;this.scheduleLiveCallouts();if(editors)for(const view of this.editors){try{view.dispatch({effects:refresh.of(this.revision)});}catch(e){console.warn('Highlighter refresh',e);}}for(const s of this.sections)if(s.el.isConnected)void this.renderSection(s);this.renderPanels();if(this.toolbar){const r=this.records.find(x=>x.id===this.toolbar.dataset.highlightId);this.toolbar.style.setProperty('--aih-choice',this.colorHex(r||{color:this.settings.color}));for(const sw of this.toolbar.querySelectorAll('[data-aih-slot]'))sw.style.setProperty('--aih-swatch',this.settings.colors[sw.dataset.aihSlot]);}}
 
  async capture(){
   const token=++this.selectionToken;if(this.toolbar?.contains(this.doc.activeElement))return;
   let view=this.currentView();
   const sel=this.doc.getSelection();if(!sel||sel.isCollapsed||!sel.toString().trim())return this.hide();
   const range=sel.getRangeAt(0);
+  const pdf=this.pdf?.capture(range);if(pdf){if(token!==this.selectionToken)return;this.pending=pdf.pending;this.rect=range.getBoundingClientRect();const existing=pdfSelected(this.records,pdf.pending);this.show(existing,false,!!existing&&pdfContains(existing,pdf.pending));return;}
   if(!(view instanceof MarkdownView)||!view.contentEl.contains(range.commonAncestorContainer))view=this.app.workspace.getLeavesOfType('markdown').map(l=>l.view).find(v=>v instanceof MarkdownView&&v.contentEl.contains(range.commonAncestorContainer));
   if(!view?.file)return this.hide();
   const selectedElement=range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement;const callout=selectedElement?.closest?.('.callout');
@@ -935,6 +991,7 @@ class Highlighter extends Plugin {
 
  async apply(change={}){
   if(!this.pending)return;const pending={...this.pending};const file=this.app.vault.getAbstractFileByPath(pending.path);if(!file)return;
+  if(pending.kind==='pdf'){const result=pdfUpsert(this.records,pending,this.pdf.texts(pending),change,{color:this.settings.color,style:this.settings.style},this.doc.defaultView.crypto.randomUUID());if(!result){this.notice(this.t('missing'));return this.hide();}this.commitRecords(result.records);if(change.color)this.settings.color=change.color;if(change.style)this.settings.style=change.style;this.pending={...result.record};this.scheduleSave();this.redraw();this.show(result.record,true);return;}
   const view=this.currentView();const text=view instanceof MarkdownView&&view.file?.path===pending.path&&view.getMode()==='source'?view.editor.getValue():await this.app.vault.cachedRead(file);
   const p=resolve(pending,text);if(!p){this.notice(this.t('missing'));return this.hide();}
   const result=upsert(this.records,{...pending,...p},text,change,{color:this.settings.color,style:this.settings.style},this.doc.defaultView.crypto.randomUUID());
@@ -947,6 +1004,7 @@ class Highlighter extends Plugin {
   const navigation=this.navigationToken=(this.navigationToken||0)+1;
   clearTimeout(this.selectionTimer);this.tapMark=null;this.hide();this.doc.getSelection?.()?.removeAllRanges();
   const file=this.app.vault.getAbstractFileByPath(r.path);if(!file){this.notice(this.t('missing'));return;}
+  if(r.kind==='pdf'){const leaf=this.app.workspace.getLeaf(false);await leaf.openFile(file,{active:true});await this.pdf.jump(leaf.view,r,navigation);return;}
   const text=await this.app.vault.cachedRead(file),p=resolve(r,text);if(!p){this.notice(this.t('missing'));return;}
   const leaf=this.app.workspace.getLeaf(false);await leaf.openFile(file,{active:true});const view=leaf.view;
   const line=text.slice(0,p.from).split('\n').length-1;
@@ -980,20 +1038,22 @@ class Highlighter extends Plugin {
   }
  }
  async noteHighlights(filter={},ids){
-  const file=this.app.workspace.getActiveFile();if(!file||file.extension!=='md')return null;
+  const file=this.app.workspace.getActiveFile();if(!file||!['md','pdf'].includes(file.extension))return null;
+  if(file.extension==='pdf'){const records=this.records.filter(r=>r.path===file.path&&r.kind==='pdf');return {file,source:'',records,tree:pdfTree(records.filter(r=>matchesHighlightFilter(r,filter)&&(!ids||ids.includes(r.id))),this.t('page'))};}
   const live=this.app.workspace.getLeavesOfType('markdown').map(l=>l.view).find(v=>v instanceof MarkdownView&&v.file?.path===file.path&&v.getMode()==='source');
   const source=live?live.editor.getValue():await this.app.vault.cachedRead(file);
   const records=this.records.filter(r=>r.path===file.path);return {file,source,records,tree:highlightOutline(source,records.filter(r=>matchesHighlightFilter(r,filter)&&(!ids||ids.includes(r.id))),file.path)};
  }
+ exportContent(model,destination){return outlineMarkdown(model.tree,model.file.basename,r=>this.displayText(r)+(r.kind==='pdf'?'\n\n'+[...new Set(r.parts.map(part=>part.page))].map(page=>this.app.fileManager.generateMarkdownLink(model.file,destination,'#page='+page,this.t('page')+' '+page)).join(' · '):''));}
  async copyHighlights(filter={},ids){
   const model=await this.noteHighlights(filter,ids);if(!model||!model.tree.count)return;
-  try{await navigator.clipboard.writeText(outlineMarkdown(model.tree,model.file.basename,r=>this.displayText(r)));this.notice(this.t('copied'));}catch{this.notice(this.t('copyFailed'));}
+  try{await navigator.clipboard.writeText(this.exportContent(model,model.file.path));this.notice(this.t('copied'));}catch{this.notice(this.t('copyFailed'));}
  }
  async exportSelected(format,filter,ids,path){
   if(!ids.length)return false;const model=await this.noteHighlights(filter,ids);if(!model||model.file.path!==path){this.notice(this.t('noteChanged'));return false;}if(!model.tree.count)return false;
-  const content=outlineMarkdown(model.tree,model.file.basename,r=>this.displayText(r));
+  const content=this.exportContent(model,model.file.path);
   try{if(format==='copy'){await navigator.clipboard.writeText(content);this.notice(this.t('copied'));}
-   else{const folder=model.file.path.includes('/')?model.file.path.slice(0,model.file.path.lastIndexOf('/')+1):'';let name=folder+model.file.basename+' - Highlights.md',i=2;while(this.app.vault.getAbstractFileByPath(name))name=folder+model.file.basename+' - Highlights '+(i++)+'.md';await this.app.vault.create(name,content);this.notice(this.t('created')+' · '+name);}
+   else{const folder=model.file.path.includes('/')?model.file.path.slice(0,model.file.path.lastIndexOf('/')+1):'';let name=folder+model.file.basename+' - Highlights.md',i=2;while(this.app.vault.getAbstractFileByPath(name))name=folder+model.file.basename+' - Highlights '+(i++)+'.md';const link=this.app.fileManager.generateMarkdownLink(model.file,name);const body=model.file.extension==='pdf'?this.exportContent(model,name):content;const exported=body.replace('\n\n','\n\n'+this.t('sourceNote')+': '+link+'\n\n');await this.app.vault.create(name,exported);this.notice(this.t('created')+' · '+name);}
    return true;
   }catch(e){console.error('Highlighter export',e);this.notice(this.t('exportFailed'));return false;}
  }

@@ -3,6 +3,7 @@ const {Plugin,ItemView,Modal,PluginSettingTab,Setting,MarkdownView,MarkdownRende
 const {ViewPlugin,Decoration}=require('@codemirror/view');
 const {StateEffect}=require('@codemirror/state');
 const {PALETTE,anchor,resolve,place,rgba,upsert,segments,selectedMark,projectMarkdown,visibleMap,migrateData,slotHex,paletteSide,highlightOutline,outlineMarkdown,matchesHighlightFilter,badgeInk,flatHighlightGroups,softStyleBadge,dismissSheet,editorSelectionBounds}=require('./core');
+const {PdfSupport,pdfPartsValid,pdfContains,pdfSelected,pdfTree,pdfUpsert}=require('./pdf');
 const TYPE='easy-text-highlights';
 const refresh=StateEffect.define();
 // Independently drawn SVG paths, no external icon/font dependency.
@@ -19,6 +20,8 @@ const ICONS={
  underline:[['path',{d:'M8 5v8a6 6 0 0 0 12 0V5'}],['path',{d:'M5 24h18',class:'aih-icon-accent'}]]};
 function icon(el,kind,removing=false){const ns='http://www.w3.org/2000/svg',svg=el.ownerDocument.createElementNS(ns,'svg');for(const [k,v] of Object.entries({viewBox:'0 0 28 28',width:28,height:28,fill:'none',stroke:'currentColor','stroke-width':1.7,'stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true'}))svg.setAttribute(k,v);for(const [tag,attrs] of ICONS[kind]){const n=el.ownerDocument.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);svg.append(n);}if(removing){const slash=el.ownerDocument.createElementNS(ns,'path');slash.setAttribute('d','M4 4l20 20');slash.setAttribute('class','aih-icon-slash');svg.append(slash);}el.append(svg);}
 const words={
+ page:['Page','頁'],
+ sourceNote:['Source','來源'],
  deselectAll:['Deselect All','取消全選'],
  filterTitle:['Filter your highlights','篩選你的摘錄'],
  swipeClose:['Drag down to close','向下拖曳關閉'],
@@ -41,7 +44,7 @@ class Highlighter extends Plugin {
    const backup=this.manifest.dir+'/data-before-five-slots.json';
    if(!await this.app.vault.adapter.exists(backup))await this.app.vault.adapter.write(backup,JSON.stringify(original,null,2));
   }
-  this.records=data.records.filter(r=>typeof r.id==='string'&&typeof r.path==='string'&&typeof r.quote==='string'&&r.quote.length&&Number.isInteger(r.from)&&Number.isInteger(r.to)&&r.from>=0&&r.to>r.from&&['highlight','underline','wave'].includes(r.style)&&PALETTE.some(c=>c.id===r.color));
+  this.records=data.records.filter(r=>typeof r.id==='string'&&typeof r.path==='string'&&typeof r.quote==='string'&&r.quote.length&&Number.isInteger(r.from)&&Number.isInteger(r.to)&&r.from>=0&&r.to>r.from&&['highlight','underline','wave'].includes(r.style)&&PALETTE.some(c=>c.id===r.color)&&(r.kind!=='pdf'||pdfPartsValid(r.parts)));
   this.dialogs=new Set();this.liveSections=new Map();this.undoStack=[];this.redoStack=[];this.undoArmed=false;this.sections=new Set();this.editors=new Set();this.saveChain=Promise.resolve();this.revision=0;this.selectionToken=0;this.unloading=false;
   this.registerView(TYPE,leaf=>new HighlightsView(leaf,this));
   this.addSettingTab(new HighlightSettings(this.app,this));
@@ -92,6 +95,7 @@ class Highlighter extends Plugin {
    void this.renderSection(entry);
   });
   const doc=this.app.workspace.containerEl.ownerDocument;this.doc=doc;
+  this.pdf=new PdfSupport(this);this.register(()=>this.pdf.destroy());
   if(doc.defaultView.MutationObserver){const observer=new doc.defaultView.MutationObserver(changes=>{if(changes.some(change=>[...change.addedNodes].some(n=>n.nodeType===1&&(n.matches?.('.callout')||n.querySelector?.('.callout')))))this.scheduleLiveCallouts();});observer.observe(this.app.workspace.containerEl,{childList:true,subtree:true});this.register(()=>observer.disconnect());}
   const schedule=()=>{if(this.toolbar)return;clearTimeout(this.selectionTimer);this.selectionTimer=setTimeout(()=>void this.capture(),180);};
   this.registerDomEvent(doc,'selectionchange',schedule);
@@ -103,13 +107,13 @@ class Highlighter extends Plugin {
   this.registerDomEvent(doc,'keyup',e=>{if(e.key==='Escape')this.hide();else if(!this.toolbar?.contains(e.target))schedule();});
   this.registerDomEvent(doc,'pointerdown',e=>{
    if(this.toolbar?.contains(e.target))return;
-   const mark=e.target.closest?.('[data-aih-id]');this.tapMark=mark?{id:mark.dataset.aihId,rect:mark.getBoundingClientRect(),x:e.clientX,y:e.clientY}:null;this.hide();
+   const mark=e.target.closest?.('[data-aih-id]');this.tapMark=mark?{id:mark.dataset.aihId,rect:mark.getBoundingClientRect(),x:e.clientX,y:e.clientY}:this.pdf.hit(e);this.hide();
   },true);
   this.registerDomEvent(doc,'click',e=>this.openClickedMark(e),true);
   this.registerDomEvent(doc,'scroll',e=>{if(this.toolbar&&!this.toolbar.contains(e.target))this.hide();},true);
   this.registerDomEvent(doc.defaultView,'resize',()=>this.position());
   if(doc.defaultView.visualViewport){this.registerDomEvent(doc.defaultView.visualViewport,'resize',()=>this.position());this.registerDomEvent(doc.defaultView.visualViewport,'scroll',()=>this.position());}
-  this.registerEvent(this.app.workspace.on('file-open',()=>{this.hide();this.renderPanels();this.scheduleLiveCallouts();}));
+  this.registerEvent(this.app.workspace.on('file-open',()=>{this.hide();this.renderPanels();this.scheduleLiveCallouts();this.pdf.schedule();}));
   this.registerEvent(this.app.vault.on('rename',(file,old)=>{for(const r of this.records){if(r.path===old||r.path.startsWith(old+'/'))r.path=file.path+r.path.slice(old.length);}this.scheduleSave();this.renderPanels();}));
   // Keep annotations for deleted files, so a vault restore can recover them.
   this.registerEvent(this.app.vault.on('delete',()=>this.renderPanels()));
@@ -120,7 +124,7 @@ class Highlighter extends Plugin {
  notice(message){const notice=new Notice(message);(notice.containerEl||notice.noticeEl?.closest?.('.notice'))?.addClass('aih-notice');return notice;}
  t(key){const language=locale(this.settings.language==='auto'?(getLanguage?.()||this.doc?.documentElement.lang||'en'):this.settings.language);return (language==='zh'?words[key]?.[1]:TRANSLATIONS[language]?.[key])||words[key]?.[0]||key;}
  name(c){return this.t('mark')==='劃線'?c.zh:c.en;}
- displayText(r){return r.display||projectMarkdown(r.quote).text;}
+ displayText(r){return r.display||(r.kind==='pdf'?r.quote:projectMarkdown(r.quote).text);}
  colorHex(r){return slotHex(r,this.settings);}
  markStyle(r){const hex=this.colorHex(r);return `--aih-color:${hex};--aih-tint:${rgba(hex,this.settings.opacity)};--aih-width:${this.settings.width}px;--aih-height:${this.settings.height}px` ;}
  scheduleSave(){clearTimeout(this.saveTimer);this.saveTimer=setTimeout(()=>void this.persist(),250);}
@@ -197,13 +201,14 @@ class Highlighter extends Plugin {
    for(const part of parts){const from=Math.max(0,part.from-ns),to=Math.min(ne-ns,part.to-ns);if(to<node.length)node.splitText(to);const selected=from?node.splitText(from):node;const span=doc.createElement('span');span.className=`aih-mark aih-${part.r.style}`;span.dataset.aihId=part.r.id;span.setAttribute('style',this.markStyle(part.r));selected.replaceWith(span);span.append(selected);}
   }
  }
- redraw(editors=true){if(this.unloading)return;this.revision++;this.scheduleLiveCallouts();if(editors)for(const view of this.editors){try{view.dispatch({effects:refresh.of(this.revision)});}catch(e){console.warn('Highlighter refresh',e);}}for(const s of this.sections)if(s.el.isConnected)void this.renderSection(s);this.renderPanels();if(this.toolbar){const r=this.records.find(x=>x.id===this.toolbar.dataset.highlightId);this.toolbar.style.setProperty('--aih-choice',this.colorHex(r||{color:this.settings.color}));for(const sw of this.toolbar.querySelectorAll('[data-aih-slot]'))sw.style.setProperty('--aih-swatch',this.settings.colors[sw.dataset.aihSlot]);}}
+ redraw(editors=true){if(this.unloading)return;this.pdf?.schedule();this.revision++;this.scheduleLiveCallouts();if(editors)for(const view of this.editors){try{view.dispatch({effects:refresh.of(this.revision)});}catch(e){console.warn('Highlighter refresh',e);}}for(const s of this.sections)if(s.el.isConnected)void this.renderSection(s);this.renderPanels();if(this.toolbar){const r=this.records.find(x=>x.id===this.toolbar.dataset.highlightId);this.toolbar.style.setProperty('--aih-choice',this.colorHex(r||{color:this.settings.color}));for(const sw of this.toolbar.querySelectorAll('[data-aih-slot]'))sw.style.setProperty('--aih-swatch',this.settings.colors[sw.dataset.aihSlot]);}}
 
  async capture(){
   const token=++this.selectionToken;if(this.toolbar?.contains(this.doc.activeElement))return;
   let view=this.currentView();
   const sel=this.doc.getSelection();if(!sel||sel.isCollapsed||!sel.toString().trim())return this.hide();
   const range=sel.getRangeAt(0);
+  const pdf=this.pdf?.capture(range);if(pdf){if(token!==this.selectionToken)return;this.pending=pdf.pending;this.rect=range.getBoundingClientRect();const existing=pdfSelected(this.records,pdf.pending);this.show(existing,false,!!existing&&pdfContains(existing,pdf.pending));return;}
   if(!(view instanceof MarkdownView)||!view.contentEl.contains(range.commonAncestorContainer))view=this.app.workspace.getLeavesOfType('markdown').map(l=>l.view).find(v=>v instanceof MarkdownView&&v.contentEl.contains(range.commonAncestorContainer));
   if(!view?.file)return this.hide();
   const selectedElement=range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement;const callout=selectedElement?.closest?.('.callout');
@@ -272,6 +277,7 @@ class Highlighter extends Plugin {
 
  async apply(change={}){
   if(!this.pending)return;const pending={...this.pending};const file=this.app.vault.getAbstractFileByPath(pending.path);if(!file)return;
+  if(pending.kind==='pdf'){const result=pdfUpsert(this.records,pending,this.pdf.texts(pending),change,{color:this.settings.color,style:this.settings.style},this.doc.defaultView.crypto.randomUUID());if(!result){this.notice(this.t('missing'));return this.hide();}this.commitRecords(result.records);if(change.color)this.settings.color=change.color;if(change.style)this.settings.style=change.style;this.pending={...result.record};this.scheduleSave();this.redraw();this.show(result.record,true);return;}
   const view=this.currentView();const text=view instanceof MarkdownView&&view.file?.path===pending.path&&view.getMode()==='source'?view.editor.getValue():await this.app.vault.cachedRead(file);
   const p=resolve(pending,text);if(!p){this.notice(this.t('missing'));return this.hide();}
   const result=upsert(this.records,{...pending,...p},text,change,{color:this.settings.color,style:this.settings.style},this.doc.defaultView.crypto.randomUUID());
@@ -284,6 +290,7 @@ class Highlighter extends Plugin {
   const navigation=this.navigationToken=(this.navigationToken||0)+1;
   clearTimeout(this.selectionTimer);this.tapMark=null;this.hide();this.doc.getSelection?.()?.removeAllRanges();
   const file=this.app.vault.getAbstractFileByPath(r.path);if(!file){this.notice(this.t('missing'));return;}
+  if(r.kind==='pdf'){const leaf=this.app.workspace.getLeaf(false);await leaf.openFile(file,{active:true});await this.pdf.jump(leaf.view,r,navigation);return;}
   const text=await this.app.vault.cachedRead(file),p=resolve(r,text);if(!p){this.notice(this.t('missing'));return;}
   const leaf=this.app.workspace.getLeaf(false);await leaf.openFile(file,{active:true});const view=leaf.view;
   const line=text.slice(0,p.from).split('\n').length-1;
@@ -317,20 +324,22 @@ class Highlighter extends Plugin {
   }
  }
  async noteHighlights(filter={},ids){
-  const file=this.app.workspace.getActiveFile();if(!file||file.extension!=='md')return null;
+  const file=this.app.workspace.getActiveFile();if(!file||!['md','pdf'].includes(file.extension))return null;
+  if(file.extension==='pdf'){const records=this.records.filter(r=>r.path===file.path&&r.kind==='pdf');return {file,source:'',records,tree:pdfTree(records.filter(r=>matchesHighlightFilter(r,filter)&&(!ids||ids.includes(r.id))),this.t('page'))};}
   const live=this.app.workspace.getLeavesOfType('markdown').map(l=>l.view).find(v=>v instanceof MarkdownView&&v.file?.path===file.path&&v.getMode()==='source');
   const source=live?live.editor.getValue():await this.app.vault.cachedRead(file);
   const records=this.records.filter(r=>r.path===file.path);return {file,source,records,tree:highlightOutline(source,records.filter(r=>matchesHighlightFilter(r,filter)&&(!ids||ids.includes(r.id))),file.path)};
  }
+ exportContent(model,destination){return outlineMarkdown(model.tree,model.file.basename,r=>this.displayText(r)+(r.kind==='pdf'?'\n\n'+[...new Set(r.parts.map(part=>part.page))].map(page=>this.app.fileManager.generateMarkdownLink(model.file,destination,'#page='+page,this.t('page')+' '+page)).join(' · '):''));}
  async copyHighlights(filter={},ids){
   const model=await this.noteHighlights(filter,ids);if(!model||!model.tree.count)return;
-  try{await navigator.clipboard.writeText(outlineMarkdown(model.tree,model.file.basename,r=>this.displayText(r)));this.notice(this.t('copied'));}catch{this.notice(this.t('copyFailed'));}
+  try{await navigator.clipboard.writeText(this.exportContent(model,model.file.path));this.notice(this.t('copied'));}catch{this.notice(this.t('copyFailed'));}
  }
  async exportSelected(format,filter,ids,path){
   if(!ids.length)return false;const model=await this.noteHighlights(filter,ids);if(!model||model.file.path!==path){this.notice(this.t('noteChanged'));return false;}if(!model.tree.count)return false;
-  const content=outlineMarkdown(model.tree,model.file.basename,r=>this.displayText(r));
+  const content=this.exportContent(model,model.file.path);
   try{if(format==='copy'){await navigator.clipboard.writeText(content);this.notice(this.t('copied'));}
-   else{const folder=model.file.path.includes('/')?model.file.path.slice(0,model.file.path.lastIndexOf('/')+1):'';let name=folder+model.file.basename+' - Highlights.md',i=2;while(this.app.vault.getAbstractFileByPath(name))name=folder+model.file.basename+' - Highlights '+(i++)+'.md';await this.app.vault.create(name,content);this.notice(this.t('created')+' · '+name);}
+   else{const folder=model.file.path.includes('/')?model.file.path.slice(0,model.file.path.lastIndexOf('/')+1):'';let name=folder+model.file.basename+' - Highlights.md',i=2;while(this.app.vault.getAbstractFileByPath(name))name=folder+model.file.basename+' - Highlights '+(i++)+'.md';const link=this.app.fileManager.generateMarkdownLink(model.file,name);const body=model.file.extension==='pdf'?this.exportContent(model,name):content;const exported=body.replace('\n\n','\n\n'+this.t('sourceNote')+': '+link+'\n\n');await this.app.vault.create(name,exported);this.notice(this.t('created')+' · '+name);}
    return true;
   }catch(e){console.error('Highlighter export',e);this.notice(this.t('exportFailed'));return false;}
  }

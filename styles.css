@@ -213,3 +213,12 @@ body .aih-settings > .setting-item.aih-settings-heading:not(:first-child) {margi
 .aih-settings .aih-settings-heading .setting-item-name {font-size:var(--font-ui-large);}
 
 .aih-dialog.aih-sheet-settling {transition:transform 180ms ease;}
+
+/* PDF text stays native/selectable; annotation graphics never intercept selection. */
+.aih-pdf-overlay { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+.aih-pdf-mark { position: absolute; box-sizing: border-box; pointer-events: none; }
+.aih-pdf-highlight { background: var(--aih-tint); border-radius: 3px; box-shadow: 0 calc(var(--aih-height) / 2) 0 var(--aih-tint),0 calc(var(--aih-height) / -2) 0 var(--aih-tint); }
+.aih-pdf-underline { border-bottom: var(--aih-width) solid var(--aih-color); }
+.aih-pdf-wave svg { position: absolute; bottom: -2px; left: 0; width: 100%; height: 6px; overflow: hidden; }
+.aih-pdf-wave path { fill: none; stroke: var(--aih-color); stroke-width: var(--aih-width); }
+.theme-light .aih-pdf-highlight { mix-blend-mode: multiply; }

@@ -1,6 +1,7 @@
 const LANGUAGES={"auto": "Auto", "en": "English", "zh": "繁體中文", "zh-CN": "简体中文", "ja": "日本語", "ko": "한국어", "es": "Español", "fr": "Français", "de": "Deutsch", "pt": "Português", "it": "Italiano"};
 const TRANSLATIONS={
   "zh-CN": {
+    "page": "页",
     "filterTitle": "筛选你的摘录",
     "swipeClose": "向下拖动关闭",
     "exportHighlights": "导出摘录",
@@ -55,9 +56,11 @@ const TRANSLATIONS={
     "copied": "已复制",
     "failed": "无法保存摘录，请保持插件启用并重试。",
     "export": "导出摘录",
-    "deselectAll": "取消全选"
+    "deselectAll": "取消全选",
+    "sourceNote": "来源"
   },
   "ja": {
+    "page": "ページ",
     "filterTitle": "ハイライトを絞り込む",
     "swipeClose": "下にドラッグして閉じる",
     "exportHighlights": "ハイライトをエクスポート",
@@ -112,9 +115,11 @@ const TRANSLATIONS={
     "copied": "コピーしました",
     "failed": "保存できません。プラグインを有効にしたまま再試行してください。",
     "export": "ハイライトをエクスポート",
-    "deselectAll": "すべて選択解除"
+    "deselectAll": "すべて選択解除",
+    "sourceNote": "出典"
   },
   "ko": {
+    "page": "페이지",
     "filterTitle": "하이라이트 필터",
     "swipeClose": "아래로 끌어 닫기",
     "exportHighlights": "하이라이트 내보내기",
@@ -169,9 +174,11 @@ const TRANSLATIONS={
     "copied": "복사됨",
     "failed": "저장하지 못했습니다. 플러그인을 활성화한 상태로 다시 시도하세요.",
     "export": "하이라이트 내보내기",
-    "deselectAll": "모두 선택 해제"
+    "deselectAll": "모두 선택 해제",
+    "sourceNote": "출처"
   },
   "es": {
+    "page": "Página",
     "filterTitle": "Filtrar tus resaltados",
     "swipeClose": "Arrastra hacia abajo para cerrar",
     "exportHighlights": "Exportar resaltados",
@@ -226,9 +233,11 @@ const TRANSLATIONS={
     "copied": "Copiado",
     "failed": "No se pudo guardar. Mantén el complemento activado e inténtalo de nuevo.",
     "export": "Exportar resaltados",
-    "deselectAll": "Deseleccionar todo"
+    "deselectAll": "Deseleccionar todo",
+    "sourceNote": "Fuente"
   },
   "fr": {
+    "page": "Page",
     "filterTitle": "Filtrer vos surlignages",
     "swipeClose": "Glissez vers le bas pour fermer",
     "exportHighlights": "Exporter les surlignages",
@@ -283,9 +292,11 @@ const TRANSLATIONS={
     "copied": "Copié",
     "failed": "Échec de l’enregistrement. Gardez le module activé et réessayez.",
     "export": "Exporter les surlignages",
-    "deselectAll": "Tout désélectionner"
+    "deselectAll": "Tout désélectionner",
+    "sourceNote": "Source"
   },
   "de": {
+    "page": "Seite",
     "filterTitle": "Markierungen filtern",
     "swipeClose": "Zum Schließen nach unten ziehen",
     "exportHighlights": "Markierungen exportieren",
@@ -340,9 +351,11 @@ const TRANSLATIONS={
     "copied": "Kopiert",
     "failed": "Speichern fehlgeschlagen. Plugin aktiviert lassen und erneut versuchen.",
     "export": "Markierungen exportieren",
-    "deselectAll": "Alles abwählen"
+    "deselectAll": "Alles abwählen",
+    "sourceNote": "Quelle"
   },
   "pt": {
+    "page": "Página",
     "filterTitle": "Filtrar destaques",
     "swipeClose": "Arraste para baixo para fechar",
     "exportHighlights": "Exportar destaques",
@@ -397,9 +410,11 @@ const TRANSLATIONS={
     "copied": "Copiado",
     "failed": "Não foi possível salvar. Mantenha o plugin ativo e tente novamente.",
     "export": "Exportar destaques",
-    "deselectAll": "Desmarcar tudo"
+    "deselectAll": "Desmarcar tudo",
+    "sourceNote": "Origem"
   },
   "it": {
+    "page": "Pagina",
     "filterTitle": "Filtra evidenziazioni",
     "swipeClose": "Trascina in basso per chiudere",
     "exportHighlights": "Esporta evidenziazioni",
@@ -454,7 +469,8 @@ const TRANSLATIONS={
     "copied": "Copiato",
     "failed": "Salvataggio non riuscito. Mantieni il plugin attivo e riprova.",
     "export": "Esporta evidenziazioni",
-    "deselectAll": "Deseleziona tutto"
+    "deselectAll": "Deseleziona tutto",
+    "sourceNote": "Fonte"
   }
 };
 function locale(raw){

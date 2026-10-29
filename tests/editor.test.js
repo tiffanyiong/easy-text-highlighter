@@ -108,8 +108,8 @@ test('Copy highlights copies only active-note excerpts with headings and creates
 test('selected export respects both current filters and checked IDs, preserves source and avoids file overwrite',async()=>{
  const text='# Topic\nFirst excerpt\nSecond excerpt';const rec=(q,id,style)=>({id,path:'Folder/demo.md',...anchor(text,text.indexOf(q),text.indexOf(q)+q.length),style,color:'slot-2'});const p=await pluginWith(rec('First excerpt','one','highlight'));p.records.push(rec('Second excerpt','two','wave'));p.app.workspace.getActiveFile=()=>({path:'Folder/demo.md',basename:'demo',extension:'md'});p.app.vault.cachedRead=async()=>text;
  await p.exportSelected('copy',{},['two'],'Folder/demo.md');assert.ok(p.copiedText().includes('Second excerpt'));assert.ok(!p.copiedText().includes('First excerpt'));
- const created=[];p.app.vault.getAbstractFileByPath=path=>path==='Folder/demo - Highlights.md';p.app.vault.create=async(path,body)=>{created.push({path,body});};
- assert.equal(await p.exportSelected('markdown',{types:['wave']},['one','two'],'Folder/demo.md'),true);assert.equal(created.length,1);assert.equal(created[0].path,'Folder/demo - Highlights 2.md');assert.ok(created[0].body.includes('Second excerpt'));assert.ok(!created[0].body.includes('First excerpt'));assert.equal(p.records.length,2);
+ p.app.fileManager={generateMarkdownLink:(file,destination)=>{assert.equal(file.path,'Folder/demo.md');assert.equal(destination,'Folder/demo - Highlights 2.md');return '[[Folder/demo]]';}};const created=[];p.app.vault.getAbstractFileByPath=path=>path==='Folder/demo - Highlights.md';p.app.vault.create=async(path,body)=>{created.push({path,body});};
+ assert.equal(await p.exportSelected('markdown',{types:['wave']},['one','two'],'Folder/demo.md'),true);assert.equal(created.length,1);assert.equal(created[0].path,'Folder/demo - Highlights 2.md');assert.ok(created[0].body.startsWith('# demo\n\nSource: [[Folder/demo]]\n\n'));assert.ok(created[0].body.includes('Second excerpt'));assert.ok(!created[0].body.includes('First excerpt'));assert.equal(p.records.length,2);
  assert.equal(await p.exportSelected('markdown',{},[],'Folder/demo.md'),false);assert.equal(await p.exportSelected('markdown',{},['one'],'different.md'),false);assert.equal(created.length,1);clean(p);
 });
 test('mobile sheet grip snaps back on a cancelled drag and closes on a deliberate downward drag',async()=>{
@@ -187,4 +187,20 @@ test('Deselect All clears export checkboxes and disables empty export actions',a
  await panel.toggleExport();const controls=descendants(panel.contentEl),deselect=controls.find(n=>n.cls==='aih-deselect-all');assert.equal(deselect.disabled,false);deselect.events.click();
  assert.equal(panel.selected.size,0);assert.ok(controls.filter(n=>n.cls==='aih-export-check').every(n=>!n.checked));assert.ok(controls.filter(n=>n.cls==='aih-export-footer-action').every(n=>n.disabled));assert.equal(deselect.disabled,false);assert.equal(deselect.textContent,'Select All');deselect.events.click();assert.equal(panel.selected.size,2);deselect.events.click();
  controls.find(n=>n.cls.includes('aih-entry-link')).events.click();assert.equal(panel.selected.size,1);assert.equal(deselect.disabled,false);clean(p);
+});
+test('created notes use Obsidian source links and localize the source label; copy stays unchanged',async()=>{
+ const text='An excerpt.',file={path:'研究/同名 筆記 (1).md',basename:'同名 筆記 (1)',extension:'md'};
+ const p=await pluginWith({id:'backlink',path:file.path,...anchor(text,0,text.length),style:'highlight',color:'slot-2'});p.settings.language='zh';p.app.workspace.getActiveFile=()=>file;p.app.vault.cachedRead=async()=>text;
+ const created=[];p.app.vault.getAbstractFileByPath=()=>null;p.app.vault.create=async(path,content)=>{created.push({path,content});};
+ p.app.fileManager={generateMarkdownLink:(target,sourcePath)=>{assert.equal(target,file);assert.equal(sourcePath,'研究/同名 筆記 (1) - Highlights.md');return '[同名 筆記 (1)](同名%20筆記%20%281%29.md)';}};
+ assert.equal(await p.exportSelected('markdown',{},['backlink'],file.path),true);
+ assert.ok(created[0].content.includes('來源: [同名 筆記 (1)](同名%20筆記%20%281%29.md)'));assert.ok(created[0].content.includes('> An excerpt.'));
+ await p.exportSelected('copy',{},['backlink'],file.path);assert.ok(!p.copiedText().includes('來源:'));assert.ok(p.copiedText().includes('> An excerpt.'));clean(p);
+});
+
+test('PDF sidebar and Markdown export never read or write PDF bytes and link to each source page',async()=>{
+ const r={id:'pdf',kind:'pdf',path:'Library/book.pdf',parts:[{page:2,...anchor('A PDF passage.',0,13)}],quote:'A PDF passage',display:'A PDF passage',from:0,to:13,color:'slot-2',style:'wave'};
+ const p=await pluginWith(r),file={path:r.path,basename:'book',extension:'pdf'};p.app.workspace.getActiveFile=()=>file;p.app.vault.cachedRead=()=>{throw Error('PDF is binary; do not cachedRead it');};let created,links=[];p.app.vault.getAbstractFileByPath=()=>null;p.app.vault.create=async(path,content)=>{created={path,content};};p.app.fileManager={generateMarkdownLink:(_file,dest,subpath='',alias)=>{links.push({dest,subpath});return '[['+file.path+subpath+(alias?'|'+alias:'')+']]';}};p.notice=()=>{};
+ const model=await p.noteHighlights();assert.equal(model.records.length,1);assert.equal(model.tree.children[0].title,'Page 2');const panel=p.panelFactory({});panel.contentEl=domElement();await panel.render();assert.ok(descendants(panel.contentEl).some(n=>n.cls.includes('aih-wave')));
+ assert.equal(await p.exportSelected('markdown',{},['pdf'],file.path),true);assert.equal(created.path,'Library/book - Highlights.md');assert.match(created.content,/Source: \[\[Library\/book.pdf\]\]/);assert.match(created.content,/\[\[Library\/book.pdf#page=2\|Page 2\]\]/);assert.equal(links.at(-1).dest,created.path);assert.equal(p.records.length,1);clean(p);
 });

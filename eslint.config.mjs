@@ -4,7 +4,7 @@ export default [
   ...obsidianmd.configs.recommended,
   {ignores:['main.js','node_modules/**','tests/**','scripts/**','build.js','docs/**']},
   {
-    files:['plugin.js','core.js','i18n.js'],
+    files:['plugin.js','core.js','i18n.js','pdf.js'],
     languageOptions:{sourceType:'commonjs',globals:{console:'readonly',navigator:'readonly',Event:'readonly',setTimeout:'readonly',clearTimeout:'readonly',Plugin:'off'}},
     rules:{
       // The dependency-free build embeds these CommonJS modules verbatim.
