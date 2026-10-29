@@ -56,7 +56,9 @@ Languages: English, Traditional Chinese, Simplified Chinese, Japanese, Korean, S
 
 ## Install
 
-**Community Plugins:** directory submission is being prepared. Until the listing is approved, install from the [GitHub release](https://github.com/tiffanyiong/easy-text-highlighter/releases/latest):
+Open **Settings → Community plugins → Browse**, search for **Easy Text Highlighter**, then install and enable it. You can also open the [Obsidian plugin page](https://community.obsidian.md/plugins/easy-text-highlighter) and choose **Add to Obsidian**.
+
+**Manual installation** from the [GitHub release](https://github.com/tiffanyiong/easy-text-highlighter/releases/latest):
 
 1. Create `<vault>/.obsidian/plugins/easy-text-highlighter/`.
 2. Download `main.js`, `manifest.json`, and `styles.css` into that folder.

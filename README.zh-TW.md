@@ -56,7 +56,9 @@ PDF 原檔不會被改寫。標記另存於插件資料，啟用插件時才會�
 
 ## 安裝
 
-**社群插件目錄：**正在準備上架申請。核准前，可從 [GitHub Release](https://github.com/tiffanyiong/easy-text-highlighter/releases/latest) 手動安裝：
+開啟 **設定 → 第三方插件 → 瀏覽**，搜尋 **Easy Text Highlighter**，安裝並啟用。也可前往 [Obsidian 插件頁面](https://community.obsidian.md/plugins/easy-text-highlighter)，按 **Add to Obsidian**。
+
+**手動安裝：**從 [GitHub Release](https://github.com/tiffanyiong/easy-text-highlighter/releases/latest) 下載：
 
 1. 建立 `<vault>/.obsidian/plugins/easy-text-highlighter/`。
 2. 將 `main.js`、`manifest.json`、`styles.css` 放入該資料夾。
