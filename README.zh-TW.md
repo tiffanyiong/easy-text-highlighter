@@ -85,3 +85,14 @@ npm run check
 ```
 
 [更新紀錄](CHANGELOG.md) · [測試紀錄](docs/VALIDATION.md) · [MIT 授權](LICENSE)
+
+## 相關主題與插件
+
+可依需要搭配使用：
+
+| 專案 | 類型 | 用途 |
+| --- | --- | --- |
+| [Animal Island Cozy](https://github.com/tiffanyiong/obsidian-animal-island) | 主題 | 溫暖配色、紙張背景與可自訂的視覺樣式。 |
+| [Animal Island Calendar](https://github.com/tiffanyiong/obsidian-animal-island-calendar) | 插件 | 筆記 Properties 的日期與時間選擇器。 |
+
+兩款插件也可搭配其他主題使用，並不強制安裝 Animal Island Cozy。

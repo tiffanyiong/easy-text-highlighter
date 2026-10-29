@@ -85,3 +85,14 @@ npm run check
 ```
 
 [Release notes](CHANGELOG.md) · [Validation](docs/VALIDATION.md) · [MIT license](LICENSE)
+
+## Related theme & plugins
+
+Optional companions for your Obsidian vault:
+
+| Project | Type | What it adds |
+| --- | --- | --- |
+| [Animal Island Cozy](https://github.com/tiffanyiong/obsidian-animal-island) | Theme | Warm colors, paper backgrounds, and customizable visual styles. |
+| [Animal Island Calendar](https://github.com/tiffanyiong/obsidian-animal-island-calendar) | Plugin | A date and time picker for note Properties. |
+
+The plugins also work with other themes; Animal Island Cozy is optional.
