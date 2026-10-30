@@ -250,3 +250,11 @@ body .aih-settings > .setting-item.aih-settings-heading:not(:first-child) {margi
 .aih-excerpt.aih-rich-excerpt{display:inline-block;max-width:100%;}
 
 .aih-sidebar-actions{padding-bottom:12px;border-bottom:1px solid var(--background-modifier-border);margin-bottom:12px;}
+
+/* Scoped Live Preview fallback for fenced code inside ordinary blockquotes. */
+.aih-quote-code-preview {
+ margin-inline-start: calc(var(--aih-quote-depth, 1) * 1em);
+ padding-inline-start: 0.7em;
+ border-inline-start: var(--blockquote-border-thickness, 2px) solid var(--blockquote-border-color);
+}
+.aih-quote-code-preview .markdown-rendered pre { margin-block: 0.4em; }

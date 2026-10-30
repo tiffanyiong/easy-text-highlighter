@@ -113,3 +113,13 @@ The initial desktop-restoration claim above was premature: the device viewport w
 - Native Live Preview drag over rendered fraction opened toolbar without entering TeX. Saved full display-math range rendered in sidebar and persisted after plugin reload. Native Reading and Editing backgrounds hug MathJax content instead of display wrapper whitespace.
 - Native filename selection in both modes showed no toolbar. Sidebar count/actions/divider remain, with top title/file header removed.
 - 130 tests pass; build/release checks pass; no publication.
+
+
+## 2026-10-30 — Unpublished reverse-selection and quote-code patch
+
+- Fixed premature toolbar capture during a pointer drag. Selection capture waits for release; plugin section and formula overlay redraws are deferred during the drag.
+- Fixed geometry measurement for a mark containing both prose and rendered math: text before/after the formula is included.
+- Added a scoped Live Preview fallback for complete fenced code blocks in ordinary blockquotes. Source mode and native callouts retain their original renderer. Moving the editor cursor into the block reveals source; double-clicking the preview also opens source. Notes are not rewritten.
+- Automated validation: 144 tests pass, including forward/backward three-formula callout capture in Source/Reading modes, delayed drag capture, mixed prose/math geometry, quote code preview/source transitions and source-offset mapping. Release reproducibility check and diff whitespace check pass. Lint: zero errors; advisories remain.
+- Installed main.js/styles.css into the main vault and Release QA vault. Both data.json files verified unchanged. No version bump, GitHub push or release.
+- Native Obsidian interaction is **not verified for this patch**: the user will reload and test later. In particular, repeat cold-open reverse dragging, check the complete saved quote and reopen it, then check code preview and source editing. Automated event/DOM mocks do not establish native race timing.

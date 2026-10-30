@@ -223,3 +223,18 @@ module.exports.mathBounds=mathBounds;
 
 function visualMarkLines(rects){const lines=[];for(const b of rects.filter(b=>b.right>b.left&&b.bottom>b.top).sort((a,b)=>a.top-b.top||a.left-b.left)){const line=lines.find(l=>Math.min(l.bottom,b.bottom)>Math.max(l.top,b.top));if(line){line.left=Math.min(line.left,b.left);line.right=Math.max(line.right,b.right);line.top=Math.min(line.top,b.top);line.bottom=Math.max(line.bottom,b.bottom);}else lines.push({...b});}return lines;}
 module.exports.visualMarkLines=visualMarkLines;
+
+// Only complete fenced blocks in ordinary quotes need a fallback preview.
+// Native callouts already render their own code widgets.
+function quotedCodeBlocks(source){
+ const rows=source.split('\n'),out=[];let offset=0,callouts=[],open=null,outerFence=null;
+ const quote=line=>{const match=line.match(/^ {0,3}((?:>[ \t]?)+)(.*)$/);return match?{depth:(match[1].match(/>/g)||[]).length,text:match[2]}:null;};
+ const strip=(line,depth)=>{let rest=line.replace(/^ {0,3}/,'');for(let i=0;i<depth;i++){if(rest[0]!=='>')return null;rest=rest.slice(1).replace(/^[ \t]/,'');}return rest;};
+ for(let index=0;index<rows.length;index++){const line=rows[index],q=quote(line),from=offset;offset+=line.length+1;
+  if(open){const text=strip(line,open.depth);if(text==null){open=null;callouts=[];continue;}const close=text.match(/^ {0,3}(`{3,}|~{3,})\s*$/);if(close&&close[1][0]===open.fence[0]&&close[1].length>=open.fence.length){if(!open.native)out.push({from:open.from,to:from+line.length,contentFrom:open.contentFrom,lineStart:open.lineStart,lineEnd:index,depth:open.depth,language:open.language,code:open.lines.join('\n')});open=null;}else open.lines.push(text);continue;}
+  if(!q){callouts=[];const fence=line.match(/^ {0,3}(`{3,}|~{3,})/);if(fence){if(!outerFence)outerFence=fence[1];else if(fence[1][0]===outerFence[0]&&fence[1].length>=outerFence.length)outerFence=null;}continue;}if(outerFence)continue;callouts=callouts.filter(depth=>depth<=q.depth);if(/^\[![^\]]+\]/.test(q.text))callouts.push(q.depth);
+  const fence=q.text.match(/^ {0,3}(`{3,}|~{3,})([^`]*)$/);if(!fence)continue;open={from,contentFrom:offset,lineStart:index,depth:q.depth,fence:fence[1],language:fence[2].trim().split(/\s+/)[0]||'',lines:[],native:callouts.some(depth=>depth<=q.depth)};
+ }
+ return out;
+}
+module.exports.quotedCodeBlocks=quotedCodeBlocks;

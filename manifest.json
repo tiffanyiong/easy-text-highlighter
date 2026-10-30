@@ -1,7 +1,7 @@
 {
   "id": "easy-text-highlighter",
   "name": "Easy Text Highlighter",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "minAppVersion": "1.14.5",
   "description": "Highlight, underline, and organize selected text. Filter highlights by color or style, then copy them or create a Markdown note.",
   "author": "Tiffany Iong",

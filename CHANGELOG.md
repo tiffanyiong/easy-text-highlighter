@@ -1,5 +1,24 @@
 # Release notes
 
+## 1.1.2 — 2026-10-30 · Bug fixes
+
+- Wait until pointer release before showing the selection toolbar, avoiding incomplete ranges captured during a drag.
+- Defer highlight and formula overlay redraws while selecting text, addressing first-selection timing issues when dragging backwards through callout formulas.
+- Include surrounding prose when measuring highlights containing rendered math.
+- Add a scoped Live Preview fallback for complete fenced code blocks inside ordinary blockquotes. Move the cursor into the block or double-click its preview to edit the original source; note contents remain unchanged.
+
+### 中文
+
+- 選字工具列改為放開滑鼠後顯示，避免拖曳途中擷取到不完整範圍。
+- 拖曳期間延後標記及公式覆蓋層重繪，處理首次由後往前選取提示框公式時的時序問題。
+- 修正混合文字與公式的標記範圍計算，包含公式前後文字。
+- 普通引用內完整的 fenced code block 新增 Live Preview 預覽處理；移入游標或雙擊預覽可編輯原始碼，不改寫筆記內容。
+
+### Validation
+
+- 144 automated tests pass; reproducible build and release checks pass.
+- Native Obsidian cold-open reverse-drag behavior and the new quoted-code preview have not yet been manually verified. Physical mobile testing remains pending.
+
 ## 1.1.1 — 2026-10-30 · Bug fixes
 
 - Fix selection and saved marks in callouts, quotes and tables containing math, images or missing-image placeholders, including nested callouts and Live Preview table cells.

@@ -486,8 +486,51 @@ module.exports={LANGUAGES,TRANSLATIONS,locale};
 return module.exports;})();
 const {Plugin,ItemView,Modal,PluginSettingTab,Setting,MarkdownView,MarkdownRenderChild,Notice,editorInfoField,getLanguage,loadMathJax,renderMath,finishRenderMath}=require('obsidian');
 const {ViewPlugin,Decoration}=require('@codemirror/view');
+const {quoteCodeExtension}=(()=>{const module={exports:{}};
+// Plain blockquotes do not receive Obsidian's native callout code widgets.
+// Replace only complete quoted fences in Live Preview; keep source editing native.
+const {StateField}=require('@codemirror/state');
+const {WidgetType,Decoration,EditorView}=require('@codemirror/view');
+const {MarkdownRenderer,Component,editorInfoField,editorLivePreviewField}=require('obsidian');
+function quoteCodeExtension(owner,parse){
+ class QuoteCodeWidget extends WidgetType {
+  constructor(block,path){super();this.block=block;this.path=path;}
+  eq(other){return this.path===other.path&&JSON.stringify(this.block)===JSON.stringify(other.block);}
+  toDOM(view){
+   const dom=view.dom.ownerDocument.createElement('div');dom.className='aih-quote-code-preview';
+   dom.style.setProperty('--aih-quote-depth',String(this.block.depth));
+   const content=dom.createDiv({cls:'markdown-rendered'}),child=new Component();owner.addChild(child);
+   const entry={el:content,ctx:{sourcePath:this.path,getSectionInfo:()=>({lineStart:this.block.lineStart,lineEnd:this.block.lineEnd})}};
+   dom.aihQuoteChild=child;dom.aihQuoteEntry=entry;owner.sections.add(entry);
+   // A longer fence safely contains literal backticks in the code itself.
+   const fence='`'.repeat(Math.max(3,...[...this.block.code.matchAll(/`+/g)].map(m=>m[0].length+1)));
+   void MarkdownRenderer.render(owner.app,fence+this.block.language+'\n'+this.block.code+'\n'+fence,content,this.path,child).then(()=>{
+    if(dom.aihQuoteChild!==child||owner.unloading)return;
+    void owner.renderSection(entry,view.state.doc.toString());view.requestMeasure();
+   }).catch(error=>{console.warn('Highlighter quoted code preview',error);content.textContent=this.block.code;});
+   dom.addEventListener('dblclick',event=>{
+    if(event.target.closest('button'))return;
+    // Double-click opens the original source; a normal drag selects rendered code.
+    event.preventDefault();view.dispatch({selection:{anchor:this.block.contentFrom}});view.focus();
+   });
+   return dom;
+  }
+  ignoreEvent(){return true;}
+  destroy(dom){owner.sections.delete(dom.aihQuoteEntry);const child=dom.aihQuoteChild;dom.aihQuoteChild=null;if(child)owner.removeChild(child);}
+ }
+ const build=state=>{
+  if(!state.field(editorLivePreviewField,false))return Decoration.none;
+  const path=state.field(editorInfoField,false)?.file?.path;if(!path)return Decoration.none;
+  const blocks=parse(state.doc.toString()).filter(block=>!state.selection.ranges.some(range=>range.from<=block.to&&range.to>=block.from));
+  return Decoration.set(blocks.map(block=>Decoration.replace({widget:new QuoteCodeWidget(block,path),block:true}).range(block.from,block.to)),true);
+ };
+ return StateField.define({create:build,update:(value,tr)=>tr.docChanged||tr.selection||tr.startState.field(editorLivePreviewField,false)!==tr.state.field(editorLivePreviewField,false)?build(tr.state):value,provide:field=>EditorView.decorations.from(field)});
+}
+module.exports={quoteCodeExtension};
+
+return module.exports;})();
 const {StateEffect}=require('@codemirror/state');
-const {PALETTE,anchor,resolve,place,rgba,upsert,segments,selectedMark,projectMarkdown,visibleMap,migrateData,slotHex,paletteSide,highlightOutline,outlineMarkdown,matchesHighlightFilter,badgeInk,flatHighlightGroups,softStyleBadge,dismissSheet,editorSelectionBounds,mathRuns,mathBounds,visualMarkLines}=(()=>{const module={exports:{}};
+const {PALETTE,anchor,resolve,place,rgba,upsert,segments,selectedMark,projectMarkdown,visibleMap,migrateData,slotHex,paletteSide,highlightOutline,outlineMarkdown,matchesHighlightFilter,badgeInk,flatHighlightGroups,softStyleBadge,dismissSheet,editorSelectionBounds,mathRuns,mathBounds,visualMarkLines,quotedCodeBlocks}=(()=>{const module={exports:{}};
 /* Pure annotation and viewport logic; shared by plugin and behavior tests. */
 const LEGACY_PALETTE = [
  ['green','Green','綠色','#20c933'],['pink','Pink','粉紅','#f7a3b3'],
@@ -714,6 +757,21 @@ module.exports.mathBounds=mathBounds;
 function visualMarkLines(rects){const lines=[];for(const b of rects.filter(b=>b.right>b.left&&b.bottom>b.top).sort((a,b)=>a.top-b.top||a.left-b.left)){const line=lines.find(l=>Math.min(l.bottom,b.bottom)>Math.max(l.top,b.top));if(line){line.left=Math.min(line.left,b.left);line.right=Math.max(line.right,b.right);line.top=Math.min(line.top,b.top);line.bottom=Math.max(line.bottom,b.bottom);}else lines.push({...b});}return lines;}
 module.exports.visualMarkLines=visualMarkLines;
 
+// Only complete fenced blocks in ordinary quotes need a fallback preview.
+// Native callouts already render their own code widgets.
+function quotedCodeBlocks(source){
+ const rows=source.split('\n'),out=[];let offset=0,callouts=[],open=null,outerFence=null;
+ const quote=line=>{const match=line.match(/^ {0,3}((?:>[ \t]?)+)(.*)$/);return match?{depth:(match[1].match(/>/g)||[]).length,text:match[2]}:null;};
+ const strip=(line,depth)=>{let rest=line.replace(/^ {0,3}/,'');for(let i=0;i<depth;i++){if(rest[0]!=='>')return null;rest=rest.slice(1).replace(/^[ \t]/,'');}return rest;};
+ for(let index=0;index<rows.length;index++){const line=rows[index],q=quote(line),from=offset;offset+=line.length+1;
+  if(open){const text=strip(line,open.depth);if(text==null){open=null;callouts=[];continue;}const close=text.match(/^ {0,3}(`{3,}|~{3,})\s*$/);if(close&&close[1][0]===open.fence[0]&&close[1].length>=open.fence.length){if(!open.native)out.push({from:open.from,to:from+line.length,contentFrom:open.contentFrom,lineStart:open.lineStart,lineEnd:index,depth:open.depth,language:open.language,code:open.lines.join('\n')});open=null;}else open.lines.push(text);continue;}
+  if(!q){callouts=[];const fence=line.match(/^ {0,3}(`{3,}|~{3,})/);if(fence){if(!outerFence)outerFence=fence[1];else if(fence[1][0]===outerFence[0]&&fence[1].length>=outerFence.length)outerFence=null;}continue;}if(outerFence)continue;callouts=callouts.filter(depth=>depth<=q.depth);if(/^\[![^\]]+\]/.test(q.text))callouts.push(q.depth);
+  const fence=q.text.match(/^ {0,3}(`{3,}|~{3,})([^`]*)$/);if(!fence)continue;open={from,contentFrom:offset,lineStart:index,depth:q.depth,fence:fence[1],language:fence[2].trim().split(/\s+/)[0]||'',lines:[],native:callouts.some(depth=>depth<=q.depth)};
+ }
+ return out;
+}
+module.exports.quotedCodeBlocks=quotedCodeBlocks;
+
 return module.exports;})();
 const {PdfSupport,pdfPartsValid,pdfContains,pdfSelected,pdfTree,pdfUpsert}=(()=>{const module={exports:{}};
 // PDF annotations live only in plugin data. PDF bytes and text-layer nodes stay untouched.
@@ -803,6 +861,7 @@ class Highlighter extends Plugin {
   }});
   this.addCommand({id:'copy-highlights',name:this.t('copyHighlights'),callback:()=>this.copyHighlights()});
   const owner=this;
+  this.registerEditorExtension(quoteCodeExtension(this,quotedCodeBlocks));
   this.registerEditorExtension(ViewPlugin.fromClass(class {
    constructor(view){this.view=view;owner.editors.add(view);this.decorations=this.build();owner.scheduleLiveCallouts();}
    build(){
@@ -837,24 +896,26 @@ class Highlighter extends Plugin {
    destroy(){owner.editors.delete(this.view);}
   },{decorations:v=>v.decorations}));
   this.registerMarkdownPostProcessor((el,ctx)=>{
-   if(!ctx.sourcePath)return;const entry={el,ctx};this.sections.add(entry);
+   if(!ctx.sourcePath||el.closest?.('.aih-quote-code-preview'))return;const entry={el,ctx};this.sections.add(entry);
    const child=new MarkdownRenderChild(el);child.onunload=()=>this.sections.delete(entry);ctx.addChild(child);
    void this.renderSection(entry);
   });
   const doc=this.app.workspace.containerEl.ownerDocument;this.doc=doc;
   this.pdf=new PdfSupport(this);this.register(()=>this.pdf.destroy());
   if(doc.defaultView.MutationObserver){const observer=new doc.defaultView.MutationObserver(changes=>{if(changes.some(change=>[...change.addedNodes].some(n=>n.nodeType===1&&(n.matches?.('.callout')||n.querySelector?.('.callout')))))this.scheduleLiveCallouts();});observer.observe(this.app.workspace.containerEl,{childList:true,subtree:true});this.register(()=>observer.disconnect());}
-  const schedule=()=>{if(this.toolbar)return;clearTimeout(this.selectionTimer);this.selectionTimer=setTimeout(()=>void this.capture(),180);};
+  const schedule=()=>{if(this.selecting||this.toolbar)return;clearTimeout(this.selectionTimer);this.selectionTimer=setTimeout(()=>void this.capture(),180);};
   this.registerDomEvent(doc,'selectionchange',schedule);
   this.registerDomEvent(doc,'beforeinput',()=>{this.undoArmed=false;},true);
   this.registerDomEvent(doc,'paste',()=>{this.undoArmed=false;this.hide();},true);
   this.registerDomEvent(doc,'cut',()=>{this.undoArmed=false;this.hide();},true);
   this.registerDomEvent(doc,'keydown',e=>{if(this.handleHistoryKey(e))return;if(!this.toolbar?.contains(e.target)&&e.key!=='Shift'&&e.key!=='Control'&&e.key!=='Meta'&&e.key!=='Alt')this.hide();},true);
-  this.registerDomEvent(doc,'pointerup',e=>{if(!this.toolbar?.contains(e.target))schedule();},true);
+  this.registerDomEvent(doc,'pointerup',e=>{if(this.toolbar?.contains(e.target))return;this.selecting=false;clearTimeout(this.selectionTimer);this.selectionTimer=setTimeout(()=>{if(this.toolbar){this.flushDeferredMarks();return;}void this.capture().finally(()=>this.flushDeferredMarks());},0);},true);
+  this.registerDomEvent(doc,'pointercancel',()=>{this.selecting=false;this.hide();this.flushDeferredMarks();},true);
   this.registerDomEvent(doc,'keyup',e=>{if(e.key==='Escape')this.hide();else if(!this.toolbar?.contains(e.target))schedule();});
   this.registerDomEvent(doc,'pointerdown',e=>{
    if(e.target.closest?.('.inline-title'))return this.hide();
-  if(this.toolbar?.contains(e.target))return;
+   if(this.toolbar?.contains(e.target))return;
+   this.selecting=true;clearTimeout(this.selectionTimer);
    const mark=e.target.closest?.('[data-aih-id]');this.tapMark=mark?{id:mark.dataset.aihId,rect:mark.getBoundingClientRect(),x:e.clientX,y:e.clientY}:this.pdf.hit(e);this.hide();
   },true);
   this.registerDomEvent(doc,'click',e=>this.openClickedMark(e),true);
@@ -912,10 +973,13 @@ class Highlighter extends Plugin {
   for(const r of this.records.filter(r=>r.path===file.path)){const p=resolve(r,text);if(p&&(p.from!==r.from||p.to!==r.to)){Object.assign(r,anchor(text,p.from,p.to));changed=true;}}
   if(changed)this.scheduleSave();this.redraw(false);
  }
+ flushDeferredMarks(){for(const [root,record] of this.deferredMathLayouts||[])if(root.isConnected)this.unifyMathMarks(root,record);this.deferredMathLayouts?.clear();const pending=[...(this.deferredSections||[])];this.deferredSections?.clear();for(const entry of pending)if(entry.el.isConnected)void this.renderSection(entry);if(this.deferredLive){this.deferredLive=false;this.scheduleLiveCallouts();}}
  scheduleLiveCallouts(){clearTimeout(this.liveTimer);this.liveTimer=setTimeout(()=>{if(!this.unloading)void this.renderLiveCallouts();},60);}
  async renderLiveCallouts(){
+  if(this.selecting){this.deferredLive=true;return;}
   for(const [el] of this.liveSections)if(!el.isConnected)this.liveSections.delete(el);
   for(const leaf of this.app.workspace.getLeavesOfType('markdown')){
+   if(this.selecting){this.deferredLive=true;return;}
    const view=leaf.view;if(!(view instanceof MarkdownView)||view.getMode()!=='source'||!view.file)continue;
    const source=view.editor.getValue();
    for(const cm of this.editors){if(!view.contentEl.contains(cm.dom))continue;for(const math of view.contentEl.querySelectorAll('.cm-line .math,.cm-line .math-inline,.cm-line mjx-container,.cm-line .MathJax')){if(math.closest('.callout,.cm-table-widget')||math.parentElement?.closest('.math,.math-inline,mjx-container,.MathJax'))continue;if(!this.liveSections.has(math))this.liveSections.set(math,{el:math});this.unwrap(math);let pos;try{pos=cm.posAtDOM(math,0);}catch{try{pos=cm.posAtDOM(math.closest('.cm-line'),0);}catch{continue;}}const allMath=mathBounds(source);let bounds=allMath.filter(b=>b.from<=pos&&b.to>=pos);if(bounds.length!==1){const line=cm.state.doc.lineAt(pos);bounds=allMath.filter(b=>b.from>=line.from&&b.to<=line.to);}if(bounds.length!==1)continue;const b=bounds[0],r=this.records.find(r=>{const a=r.path===view.file.path&&resolve(r,source);return a&&a.from<b.to&&a.to>b.from;});if(!r)continue;const span=math.ownerDocument.createElement('span');span.className='aih-mark aih-'+r.style;span.dataset.aihId=r.id;span.setAttribute('style',this.markStyle(r));span.append(...math.childNodes);math.append(span);this.decorateMath(span,r);}}
@@ -938,16 +1002,18 @@ class Highlighter extends Plugin {
  }
  decorateMath(el,r){el.addClass?.('aih-math-mark');if(r.style!=='wave')return;const doc=el.ownerDocument,ns='http://www.w3.org/2000/svg',svg=doc.createElementNS(ns,'svg'),defs=doc.createElementNS(ns,'defs'),pattern=doc.createElementNS(ns,'pattern'),path=doc.createElementNS(ns,'path'),rect=doc.createElementNS(ns,'rect');const id='aih-math-wave-'+(this.mathLineId=(this.mathLineId||0)+1);svg.setAttribute('class','aih-math-wave');svg.setAttribute('aria-hidden','true');pattern.setAttribute('id',id);pattern.setAttribute('patternUnits','userSpaceOnUse');pattern.setAttribute('width','8');pattern.setAttribute('height','8');path.setAttribute('d','M0 4 Q2 0 4 4 T8 4');path.setAttribute('fill','none');pattern.append(path);defs.append(pattern);rect.setAttribute('width','100%');rect.setAttribute('height','100%');rect.setAttribute('fill','url(#'+id+')');svg.append(defs,rect);el.append(svg);}
  watchMathLayout(root,record){const win=root.ownerDocument?.defaultView;if(!win?.ResizeObserver)return;if(!this.mathLayouts){this.mathLayouts=new Map();this.mathObserver=new win.ResizeObserver(entries=>{for(const {target} of entries){const saved=this.mathLayouts.get(target);if(saved&&target.isConnected)this.unifyMathMarks(target,saved.record);}});this.register(()=>{this.mathObserver.disconnect();for(const el of this.mathLayouts.keys()){for(const layer of el.querySelectorAll('.aih-unified-layer'))layer.remove();for(const m of el.querySelectorAll('.aih-unified-mark'))m.classList.remove('aih-unified-mark');for(const host of el.querySelectorAll('.aih-unified-host'))host.classList.remove('aih-unified-host');el.classList.remove('aih-unified-host');}this.mathLayouts.clear();});}for(const el of this.mathLayouts.keys())if(!el.isConnected){this.mathObserver.unobserve(el);this.mathLayouts.delete(el);}if(!this.mathLayouts.has(root)){this.mathLayouts.set(root,{record});this.mathObserver.observe(root);}else this.mathLayouts.set(root,{record});}
- unifyMathMarks(root,record){const win=root.ownerDocument?.defaultView;if(!win?.requestAnimationFrame)return;if(root.querySelector('.math,mjx-container,.MathJax'))this.watchMathLayout(root,record);win.requestAnimationFrame(()=>{if(!root.isConnected||this.unloading)return;const candidates=record?[root]:[...new Set([...root.querySelectorAll('.math,mjx-container,.MathJax')].map(m=>m.closest('.cm-line,p,li,td,th,.cm-embed-block')||root))];if(!record&&!candidates.length)candidates.push(root);for(const block of candidates){if(!block.querySelector('.math,mjx-container,.MathJax'))continue;for(const old of block.querySelectorAll('.aih-unified-layer'))old.remove();const marks=record?[...block.querySelectorAll('.aih-mark')]:[...block.querySelectorAll('[data-aih-id]')];const ids=record?[record.id]:[...new Set(marks.map(m=>m.dataset.aihId))];for(const id of ids){const r=record||this.records.find(r=>r.id===id);if(!r)continue;const owned=record?marks:marks.filter(m=>m.dataset.aihId===id);const rects=[];for(const mark of owned){const ink=mark.querySelector('mjx-math')||mark.querySelector('.MathJax svg');const boxes=ink?ink.getClientRects():mark.getClientRects();for(const b of boxes)if(b.width>0&&b.height>0)rects.push({left:b.left,right:b.right,top:b.top,bottom:b.bottom});}if(!rects.length)continue;const lines=visualMarkLines(rects);const host=block.matches('.cm-embed-block')?(block.querySelector('.aih-math-mark')||block):block.matches('.cm-line')?(block.querySelector('.math,.math-inline,mjx-container,.MathJax')||block):block;host.classList.add('aih-unified-host');const box=host.getBoundingClientRect(),doc=block.ownerDocument,ns='http://www.w3.org/2000/svg',svg=doc.createElementNS(ns,'svg');svg.setAttribute('class','aih-unified-layer');svg.setAttribute('aria-hidden','true');svg.setAttribute('viewBox','0 0 '+box.width+' '+box.height);svg.style.cssText='position:absolute;left:0;top:0;width:'+box.width+'px;height:'+box.height+'px;max-width:none;overflow:visible;pointer-events:none;z-index:-1;color:'+this.colorHex(r);for(const line of lines){const x=line.left-box.left,y=line.top-box.top,w=line.right-line.left,h=line.bottom-line.top;if(r.style==='highlight'){const rect=doc.createElementNS(ns,'rect');for(const [k,v] of Object.entries({x,y:y-(this.settings.height??2),width:w,height:h+2*(this.settings.height??2),rx:4,fill:rgba(this.colorHex(r),this.settings.opacity)}))rect.setAttribute(k,String(v));svg.append(rect);}else{const path=doc.createElementNS(ns,'path');let d='M'+x+' '+(y+h+2);if(r.style==='underline')d+=' h'+w;else{for(let pos=0;pos<w;pos+=8){const width=Math.min(8,w-pos);d+=' q'+width/4+' -4 '+width/2+' 0 t'+width/2+' 0';}}path.setAttribute('d',d);path.setAttribute('fill','none');path.setAttribute('stroke','currentColor');path.setAttribute('stroke-width',String(this.settings.width||2));svg.append(path);}}for(const mark of owned)mark.classList.add('aih-unified-mark');host.append(svg);}}});}
+ markRects(mark){const math=[...mark.querySelectorAll('mjx-math,.MathJax svg')];if(!math.length)return [...mark.getClientRects()];const boxes=math.flatMap(el=>[...el.getClientRects()]),doc=mark.ownerDocument,walker=doc.createTreeWalker(mark,4);let node;while((node=walker.nextNode())){if(!node.textContent.trim()||node.parentElement?.closest('mjx-container,.MathJax,.aih-math-wave,.aih-unified-layer,.embed-actions,button'))continue;const range=doc.createRange();range.selectNodeContents(node);boxes.push(...range.getClientRects());}return boxes;}
+ unifyMathMarks(root,record){const win=root.ownerDocument?.defaultView;if(!win?.requestAnimationFrame)return;if(root.querySelector('.math,mjx-container,.MathJax'))this.watchMathLayout(root,record);win.requestAnimationFrame(()=>{if(!root.isConnected||this.unloading)return;if(this.selecting){(this.deferredMathLayouts||(this.deferredMathLayouts=new Map())).set(root,record);return;}const candidates=record?[root]:[...new Set([...root.querySelectorAll('.math,mjx-container,.MathJax')].map(m=>m.closest('.cm-line,p,li,td,th,.cm-embed-block')||root))];if(!record&&!candidates.length)candidates.push(root);for(const block of candidates){if(!block.querySelector('.math,mjx-container,.MathJax'))continue;for(const old of block.querySelectorAll('.aih-unified-layer'))old.remove();const marks=record?[...block.querySelectorAll('.aih-mark')]:[...block.querySelectorAll('[data-aih-id]')];const ids=record?[record.id]:[...new Set(marks.map(m=>m.dataset.aihId))];for(const id of ids){const r=record||this.records.find(r=>r.id===id);if(!r)continue;const owned=record?marks:marks.filter(m=>m.dataset.aihId===id);const rects=[];for(const mark of owned){const boxes=this.markRects(mark);for(const b of boxes)if(b.width>0&&b.height>0)rects.push({left:b.left,right:b.right,top:b.top,bottom:b.bottom});}if(!rects.length)continue;const lines=visualMarkLines(rects);const host=block.matches('.cm-embed-block')?(block.querySelector('.aih-math-mark')||block):block.matches('.cm-line')?(block.querySelector('.math,.math-inline,mjx-container,.MathJax')||block):block;host.classList.add('aih-unified-host');const box=host.getBoundingClientRect(),doc=block.ownerDocument,ns='http://www.w3.org/2000/svg',svg=doc.createElementNS(ns,'svg');svg.setAttribute('class','aih-unified-layer');svg.setAttribute('aria-hidden','true');svg.setAttribute('viewBox','0 0 '+box.width+' '+box.height);svg.style.cssText='position:absolute;left:0;top:0;width:'+box.width+'px;height:'+box.height+'px;max-width:none;overflow:visible;pointer-events:none;z-index:-1;color:'+this.colorHex(r);for(const line of lines){const x=line.left-box.left,y=line.top-box.top,w=line.right-line.left,h=line.bottom-line.top;if(r.style==='highlight'){const rect=doc.createElementNS(ns,'rect');for(const [k,v] of Object.entries({x,y:y-(this.settings.height??2),width:w,height:h+2*(this.settings.height??2),rx:4,fill:rgba(this.colorHex(r),this.settings.opacity)}))rect.setAttribute(k,String(v));svg.append(rect);}else{const path=doc.createElementNS(ns,'path');let d='M'+x+' '+(y+h+2);if(r.style==='underline')d+=' h'+w;else{for(let pos=0;pos<w;pos+=8){const width=Math.min(8,w-pos);d+=' q'+width/4+' -4 '+width/2+' 0 t'+width/2+' 0';}}path.setAttribute('d',d);path.setAttribute('fill','none');path.setAttribute('stroke','currentColor');path.setAttribute('stroke-width',String(this.settings.width||2));svg.append(path);}}for(const mark of owned)mark.classList.add('aih-unified-mark');host.append(svg);}}});}
  selectionText(range,el){const {nodes}=this.renderedText(el);let result='',previousBlock;for(const item of nodes){if(!range.intersectsNode(item.node))continue;const from=item.atomic?0:range.startContainer===item.node?range.startOffset:0,to=item.atomic?1:range.endContainer===item.node?range.endOffset:item.node.length;if(to<=from)continue;const block=(item.atomic?item.node:item.node.parentElement)?.closest?.('.cm-line,p,li,td,th');if(result&&block&&previousBlock&&block!==previousBlock)result+='\n';result+=item.atomic?'\ufff9':item.node.textContent.slice(from,to);previousBlock=block;}return result;}
  selectionExcerpt(pieces,source){const ordered=[...new Map(pieces.map(p=>[p.from+':'+p.to,p])).values()].sort((a,b)=>a.from-b.from);let result='';for(let i=0;i<ordered.length;i++){const p=ordered[i];if(i){const gap=projectMarkdown(source.slice(ordered[i-1].to,p.from)).text;if(gap.includes('\n'))result+='\n';else if(/\s/.test(gap)&&!/[\s]$/.test(result)&&!/^\s/.test(p.text))result+=' ';}result+=p.text;}return result.replace(/[\u200b\ufeff\ufffc]/g,'').trim();}
  unwrap(el){for(const line of el.querySelectorAll('svg.aih-math-wave,.aih-math-baseline,.aih-unified-layer'))line.remove();for(const m of el.querySelectorAll('span[data-aih-id]'))m.replaceWith(...m.childNodes);el.normalize();}
  async renderSection(entry,liveSource){
   const {el,ctx}=entry;
+  if(this.selecting){(this.deferredSections||(this.deferredSections=new Set())).add(entry);return;}
   if(liveSource===undefined&&el.closest?.('.markdown-source-view')&&(el.closest?.('.callout')||el.querySelector?.('.callout'))){this.scheduleLiveCallouts();return;}
   const revision=(entry.revision||0)+1;entry.revision=revision;const info=ctx.getSectionInfo(el);if(!info)return;
   const file=this.app.vault.getAbstractFileByPath(ctx.sourcePath);if(!file)return;
-  const source=liveSource===undefined?await this.app.vault.cachedRead(file):liveSource;if(this.unloading||entry.revision!==revision)return;
+  const source=liveSource===undefined?await this.app.vault.cachedRead(file):liveSource;if(this.unloading||entry.revision!==revision)return;if(this.selecting){(this.deferredSections||(this.deferredSections=new Set())).add(entry);return;}
   this.unwrap(el);
   const lines=source.split('\n');const start=lines.slice(0,info.lineStart).join('\n').length+(info.lineStart?1:0);const end=start+lines.slice(info.lineStart,info.lineEnd+1).join('\n').length;
   const doc=el.ownerDocument;const {nodes,visible:text}=this.renderedText(el);
@@ -977,7 +1043,7 @@ class Highlighter extends Plugin {
   const pdf=this.pdf?.capture(range);if(pdf){if(token!==this.selectionToken)return;this.pending=pdf.pending;this.rect=range.getBoundingClientRect();const existing=pdfSelected(this.records,pdf.pending);this.show(existing,false,!!existing&&pdfContains(existing,pdf.pending));return;}
   if(!(view instanceof MarkdownView)||!view.contentEl.contains(range.commonAncestorContainer))view=this.app.workspace.getLeavesOfType('markdown').map(l=>l.view).find(v=>v instanceof MarkdownView&&v.contentEl.contains(range.commonAncestorContainer));
   if(!view?.file)return this.hide();
-  const selectedElement=range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement;const callout=selectedElement?.closest?.('.callout');const widget=callout||selectedElement?.closest?.('td,th')||selectedElement?.closest?.('.cm-table-widget,table,.math');
+  const selectedElement=range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement;const callout=selectedElement?.closest?.('.callout');const widget=callout||selectedElement?.closest?.('td,th')||selectedElement?.closest?.('.cm-table-widget,table,.math,.aih-quote-code-preview');
   let pending,source;
   const mathWidget=selectedElement?.closest?.('.math');
   if(view.getMode()==='source'&&mathWidget&&!callout){
