@@ -11,7 +11,7 @@ test('PDF creation and recoloring preserve a single annotation and support one-c
 test('PDF overlap merging isolates pages and files, leaves adjacent marks separate',()=>{
  const text='same text on every page',texts=new Map([[1,text],[2,text]]);let records=[];for(const [page,path,id]of [[1,'a.pdf','a'],[2,'a.pdf','b'],[1,'b.pdf','c']])records=pdfUpsert(records,selection(text,0,4,page,path),texts,{},defaults,id).records;
  assert.equal(records.length,3);records=pdfUpsert(records,selection(text,4,9,1,'a.pdf'),texts,{},defaults,'d').records;assert.equal(records.length,4);
- records=pdfUpsert(records,selection(text,1,6,1,'a.pdf'),texts,{style:'wave'},defaults,'e').records;assert.equal(records.length,3);assert.equal(records.find(r=>r.id==='a').quote,'same text');assert.equal(records.find(r=>r.id==='b').parts[0].page,2);assert.equal(records.find(r=>r.id==='c').path,'b.pdf');
+ records=pdfUpsert(records,selection(text,1,6,1,'a.pdf'),texts,{style:'wave'},defaults,'e').records;assert.equal(records.length,3);assert.equal(records.find(r=>r.path==='a.pdf'&&r.parts[0].page===1).quote,'same text');assert.equal(records.find(r=>r.id==='b').parts[0].page,2);assert.equal(records.find(r=>r.id==='c').path,'b.pdf');
 });
 test('multi-page PDF selections group by page, filter and inherit customized palette',()=>{
  const a='first page passage',b='second page passage';const pending={...selection(a,0,a.length),parts:[{page:1,...anchor(a,0,a.length)},{page:2,...anchor(b,0,b.length)}]};
@@ -20,4 +20,8 @@ test('multi-page PDF selections group by page, filter and inherit customized pal
 });
 test('unresolved or unavailable PDF text never attaches a mark to a guessed passage',()=>{
  const pending=selection('original passage',0,8);assert.equal(pdfUpsert([],pending,new Map([[1,'a different page']]),{},defaults,'bad'),null);assert.equal(pdfUpsert([],pending,new Map(),{},defaults,'bad'),null);assert.equal(pdfPartsValid([{page:0,from:0,to:2,quote:'ab'}]),false);
+});
+
+test('selectable PDF formula glyphs capture, save and reload the selected expression',()=>{
+ const {pdfCapture}=require('../pdf');const formula='P = TP / (TP + FP)';const node={nodeType:3,textContent:formula,length:formula.length,parentElement:{closest:()=>null}};const page={dataset:{pageNumber:'1'},querySelector:()=>({}),ownerDocument:{createTreeWalker:()=>{let done=false;return {nextNode:()=>done?null:(done=true,node)};}}};const view={file:{path:'formula.pdf'},contentEl:{querySelectorAll:()=>[page]}};const range={startContainer:node,endContainer:node,startOffset:0,endOffset:formula.length,intersectsNode:()=>true};const captured=pdfCapture(view,range);assert.equal(captured.pending.quote,formula);const saved=pdfUpsert([],captured.pending,captured.texts,{},defaults,'formula',1);const loaded=JSON.parse(JSON.stringify(saved.records));assert.equal(loaded.length,1);assert.equal(loaded[0].quote,formula);assert.equal(pdfContains(loaded[0],captured.pending),true);
 });

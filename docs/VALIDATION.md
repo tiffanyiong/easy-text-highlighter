@@ -75,3 +75,41 @@ Not published. Public GitHub release remains 1.0.0. Installed in the dedicated E
 
 ### Correction: desktop restoration
 The initial desktop-restoration claim above was premature: the device viewport was off, but mobile/tablet body classes remained. Subsequently disabled official mobile emulation and verified body.className no longer contains emulate-mobile, is-mobile, or is-tablet; visually confirmed the desktop UI. No theme CSS changes. Publication remains paused.
+
+## Formula / table selection regression — local only
+
+- Reproduced before fix: strict visibleMap failed for rendered math in a callout and for quoted tables; ordinary two-column reading table mapping passed.
+- Reviewed supplied Downloads/Pasted text.txt in an isolated pure-core VM. It repairs prose around math and quoted tables by excluding math, but formula-only selection still fails, PDF code is unchanged, and currency `$5 and $10` is incorrectly removed. Supplied data.json has zero records and was not installed.
+- Local fix maps rendered math atomically to its full TeX source; preserves normal prose and currency. Quoted / single-column tables supported. Active table cell editors exclude their mirrored preview and measurement text.
+- Regression tests added for prose in math/table callouts in both modes, atomic math offsets, currency/code, one-column formula tables, mirrored Live Preview cells and selectable PDF formula capture/save/reload. Fixed a pre-existing flaky PDF test that assumed a surviving merge ID rather than asserting its page/range content.
+- Native Obsidian verified: callout prose selection and save in Live Preview; quoted table cell selection/save in Reading; inline math selection/save and display after mode switch; ordinary table cell selection/save in Live Preview; persisted marks after plugin reload; selectable PDF numerator TP saved and remains visible after reopening.
+- Evidence: /tmp/easy-formula-editing-verified.jpg, /tmp/easy-formula-reading-verified.jpg, /tmp/easy-formula-pdf-reopened.jpg.
+- PDF math without a selectable text layer (scanned/outlined graphics) remains outside text-highlighting support; no OCR added. Markdown math is highlighted as an entire rendered expression, not an individual TeX glyph.
+- 100 tests pass; release check passes; lint has 0 errors and 23 existing advisories. No version bump, commit, push or publication. Wait for Tiffany's release approval.
+
+## Images and mixed media selection — local regression fix
+
+- Failing-before: wiki images (including size/alias), missing wiki images, reference images, quoted fences and nested media/table/math fixtures prevented whole-block mapping.
+- Fix: ignore wiki/image references and actual image/embed/error UI in the prose map, support quoted fences and image references defined outside the rendered section. Preserve literal unresolved reference syntax when Live Preview displays it. Linked Markdown images and literal image-looking inline code are also covered.
+- Mixed selection: selected prose before/after an embed is retained, error UI is excluded from excerpts. Editing quotes use filtered visible text to validate CodeMirror anchors. Image-only selection creates no empty text highlight.
+- Excerpts trim leading/trailing UI whitespace and object replacement characters; existing records display without a media placeholder blank line, while internal paragraph breaks remain. Media selections trim the source anchor to the first/last actual text character.
+- Native verified Reading: image-before and image-after callout prose, quote prose with image/math, quote table cell, reference image prose, quoted-code prose, nested bilingual/emoji prose, missing-image prose, and one range spanning broken image plus prose on both sides. Persisted mixed excerpt contains two text lines and no error message.
+- Native verified Editing: callout prose after wiki image+math+table; reference-image widget prose opens the toolbar even when image syntax is rendered literally. Mode switches and plugin reload preserve marks. Mixed Editing quote/broken-image behavior is covered by regression tests; final extra live UI attempts were interrupted by application-state changes.
+- 123 automated tests pass; release checks pass; lint 0 errors / 23 existing advisories. Source Markdown untouched by applying highlights. No commit, push, version bump or publication.
+
+### Formula excerpt and line rendering (local, 2026-10-30)
+- 126 tests pass. Sidebar uses Obsidian math rendering for Markdown TeX and retains selected color/style; PDF text is not reinterpreted as TeX.
+- Native Reading and Editing verified with quote inline math: complete wave beneath the math box; sidebar renders superscripts. Live Preview math widgets use validated source positions.
+- Build/release checks pass. No release performed.
+
+### Formula/prose continuity follow-up (local, 2026-10-30)
+- Native Reading, Live Preview and sidebar verified for background marker, solid underline and wavy underline on `Formula $x^2+y^2=z^2$.`. A single visual line is painted across the formula boundary.
+- Live Preview keeps overlays inside math widgets, avoiding CodeMirror line reconciliation removing them. Resize observation refreshes wrapped line geometry.
+- Regression test covers merging different prose/math heights into one visual mark while keeping wrapped lines separate. 127 tests pass; build/release checks pass, lint 0 errors/23 advisories.
+- Local only; no publication.
+
+### Display math and filename selection (local, 2026-10-30)
+- Regression reproduced before fix: rendered display formula among other math did not open toolbar; editable filename incorrectly opened toolbar. Both now pass.
+- Native Live Preview drag over rendered fraction opened toolbar without entering TeX. Saved full display-math range rendered in sidebar and persisted after plugin reload. Native Reading and Editing backgrounds hug MathJax content instead of display wrapper whitespace.
+- Native filename selection in both modes showed no toolbar. Sidebar count/actions/divider remain, with top title/file header removed.
+- 130 tests pass; build/release checks pass; no publication.

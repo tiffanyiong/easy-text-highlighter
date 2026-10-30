@@ -9,13 +9,13 @@ const LEGACY_PALETTE = [
  ['peach','Peach','蜜桃','#e58b75'],['parchment','Parchment','羊皮紙','#e8dcc0']
 ].map(([id,en,zh,hex])=>({id,en,zh,hex}));
 const PALETTE=[
- ['slot-5','Color 1','顏色 1','#a9eae2'],
- ['slot-2','Color 2','顏色 2','#fdf85d'],
+ ['slot-2','Color 1','顏色 1','#fdf85d'],
+ ['slot-5','Color 2','顏色 2','#a9eae2'],
  ['slot-1','Color 3','顏色 3','#91f476'],
  ['slot-3','Color 4','顏色 4','#f7a3b3'],
  ['slot-4','Color 5','顏色 5','#ceaef4']
 ].map(([id,en,zh,hex])=>({id,en,zh,hex}));
-const DEFAULTS={language:'auto',color:'slot-2',style:'highlight',height:2,width:2,opacity:.3,colors:Object.fromEntries(PALETTE.map(c=>[c.id,c.hex]))};
+const DEFAULTS={language:'auto',color:PALETTE[0].id,style:'highlight',height:2,width:2,opacity:.3,colors:Object.fromEntries(PALETTE.map(c=>[c.id,c.hex]))};
 const validHex=x=>typeof x==='string'&&/^#[\da-f]{6}$/i.test(x);
 function settings(raw={}) {
  const n=(x,min,max,d)=>Number.isFinite(x)?Math.max(min,Math.min(max,x)):d;
@@ -25,7 +25,7 @@ function settings(raw={}) {
   // Preserve deliberate custom colors; refresh the old factory palette to softer defaults.
   return [c.id,validHex(raw.colors?.[c.id])?raw.colors[c.id]:(validHex(old)&&old!==oldDefault?old:c.hex)];
  }));
- return {language:['auto','en','zh','zh-CN','ja','ko','es','fr','de','pt','it'].includes(raw.language)?raw.language:'auto',color:PALETTE.some(c=>c.id===raw.color)?raw.color:legacySlot(raw.color,raw,colors),style:['highlight','underline','wave'].includes(raw.style)?raw.style:'highlight',height:n(raw.height,0,5,2),width:n(raw.width,1,5,2),opacity:n(raw.opacity,.1,.7,.3),colors};
+ return {language:['auto','en','zh','zh-CN','ja','ko','es','fr','de','pt','it'].includes(raw.language)?raw.language:'auto',color:raw.color==null?DEFAULTS.color:PALETTE.some(c=>c.id===raw.color)?raw.color:legacySlot(raw.color,raw,colors),style:['highlight','underline','wave'].includes(raw.style)?raw.style:'highlight',height:n(raw.height,0,5,2),width:n(raw.width,1,5,2),opacity:n(raw.opacity,.1,.7,.3),colors};
 }
 function legacySlot(color,raw={},colors=DEFAULTS.colors,hex){
  if(PALETTE.some(c=>c.id===color))return color;
@@ -95,16 +95,20 @@ function selectedMark(records,pending,text) {
 module.exports.selectedMark=selectedMark;
 
 // Visible Markdown projection with source offsets; markup stays untouched in notes.
-function projectMarkdown(source) {
+function projectMarkdown(source,options={}) {
  const chars=[],offsets=[];let tableMode=false;const emit=(s,from,to)=>{for(const ch of s){for(let j=0;j<ch.length;j++){chars.push(ch[j]);offsets.push({from,to});}}};
+ const references=new Set((options.preserveReferences?[]:(options.referenceSource||source).split('\n')).map(line=>line.replace(/^\s*(?:>\s*)+/, '').match(/^\s{0,3}\[([^\]]+)\]:\s*\S/)?.[1]?.trim().replace(/\s+/g,' ').toLowerCase()).filter(Boolean));
  const entities={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' '};
+ function bracketEnd(open,end){let depth=0;for(let k=open;k<end;k++){if(source[k]==='\\'){k++;continue;}if(source[k]==='[')depth++;if(source[k]===']'&&!--depth)return k;}return -1;}
  function inline(start,end){let i=start;
   while(i<end){
    if(source[i]==='\\'&&i+1<end){emit(source[i+1],i,i+2);i+=2;continue;}
    if(source[i]==='`'){const m=source.slice(i,end).match(/^`+/)[0],close=source.indexOf(m,i+m.length);if(close>=0&&close<end){for(let k=i+m.length;k<close;k++)emit(source[k],k,k+1);i=close+m.length;continue;}}
+   if(source.startsWith('![[',i)){const close=source.indexOf(']]',i+3);if(close>=0&&close<end){i=close+2;continue;}}
    if(source.startsWith('[[',i)){const close=source.indexOf(']]',i+2);if(close>=0&&close<end){const pipe=source.lastIndexOf('|',close);const label=pipe>=i+2?pipe+1:i+2;inline(label,close);i=close+2;continue;}}
-   if(source[i]==='['||source.startsWith('![',i)){const image=source[i]==='!',open=i+(image?1:0),close=source.indexOf(']',open+1);if(close>=0&&close<end&&source[close+1]==='('){let k=close+2,depth=1;for(;k<end&&depth;k++){if(source[k]==='(')depth++;if(source[k]===')')depth--;}
-     if(!depth){if(!image)inline(open+1,close);i=k;continue;}}}
+   if(source[i]==='['||source.startsWith('![',i)){const image=source[i]==='!',open=i+(image?1:0),close=bracketEnd(open,end);if(close>=0&&close<end&&source[close+1]==='('){let k=close+2,depth=1;for(;k<end&&depth;k++){if(source[k]==='(')depth++;if(source[k]===')')depth--;}
+     if(!depth){if(!image)inline(open+1,close);i=k;continue;}}
+    if(close>=0){const suffix=source.slice(close+1,end).match(/^\[([^\]]*)\]/);const label=(suffix?.[1]||source.slice(open+1,close)).trim().replace(/\s+/g,' ').toLowerCase();if(references.has(label)){if(!image)inline(open+1,close);i=close+1+(suffix?.[0].length||0);continue;}}}
    if(source.startsWith('<!--',i)){const close=source.indexOf('-->',i+4);if(close>=0){i=close+3;continue;}}
    if(source[i]==='<'){const close=source.indexOf('>',i+1);if(close>=0&&close<end){const tag=source.slice(i+1,close);if(/^https?:\/\//.test(tag)||/^[^ <>]+@[^ <>]+$/.test(tag))inline(i+1,close);i=close+1;continue;}}
    if(source[i]==='&'){const m=source.slice(i,end).match(/^&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/i);if(m){const key=m[1];let decoded=entities[key.toLowerCase()];if(key[0]==='#'){const num=key[1].toLowerCase()==='x'?parseInt(key.slice(2),16):parseInt(key.slice(1),10);if(num<=0x10ffff)decoded=String.fromCodePoint(num);}if(decoded){emit(decoded,i,i+m[0].length);i+=m[0].length;continue;}}}
@@ -116,22 +120,45 @@ function projectMarkdown(source) {
  }
  let cursor=0,fence=null,frontmatter=source.startsWith('---\n');
  const lines=source.split('\n');const tables=new Set();
- for(let row=1;row<lines.length;row++)if(/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[row])){tables.add(row-1);tables.add(row);for(let k=row+1;k<lines.length&&lines[k].includes('|');k++)tables.add(k);}
+ const tableLine=line=>line.replace(/^\s*(?:>\s*)+/, '');
+ for(let row=1;row<lines.length;row++)if(tableLine(lines[row]).includes('|')&&/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(tableLine(lines[row]))){tables.add(row-1);tables.add(row);for(let k=row+1;k<lines.length&&tableLine(lines[k]).includes('|');k++)tables.add(k);}
  let row=-1;for(const line of lines){row++;tableMode=tables.has(row);
   const end=cursor+line.length;
   if(frontmatter){if(cursor>0&&/^---\s*$/.test(line))frontmatter=false;cursor=end+1;continue;}
-  const fm=line.match(/^\s*(`{3,}|~{3,})/);if(fm){fence=fence?null:fm[1];cursor=end+1;continue;}
-  if(tableMode&&/^\s*[| :-]+$/.test(line)){cursor=end+1;continue;}
-  const prefix=fence?0:(line.match(/^\s*(?:(?:>\s*)+)?(?:(?:#{1,6}\s+)|(?:[-+*]\s+(?:\[[^\]]\]\s+)?)|(?:\d+[.)]\s+))?/)?.[0].length||0);
-  if(fence){for(let i=cursor;i<end;i++)emit(source[i],i,i+1);}else {const callout=source.slice(cursor+prefix,end).match(/^\[![^\]]+\][+-]?\s*/)?.[0].length||0;inline(cursor+prefix+callout,end);}
+  const quotePrefix=line.match(/^\s*(?:>[ \t]?)+/)?.[0].length||0;
+  if(!fence&&/^\s{0,3}\[[^\]]+\]:\s*\S/.test(line.slice(quotePrefix))){cursor=end+1;continue;}
+  const fm=line.slice(quotePrefix).match(/^\s*(`{3,}|~{3,})/);if(fm){fence=fence?null:fm[1];cursor=end+1;continue;}
+  if(tableMode&&/^\s*[| :-]+$/.test(tableLine(line))){cursor=end+1;continue;}
+  const prefix=fence?quotePrefix:(line.match(/^\s*(?:(?:>\s*)+)?(?:(?:#{1,6}\s+)|(?:[-+*]\s+(?:\[[^\]]\]\s+)?)|(?:\d+[.)]\s+))?/)?.[0].length||0);
+  if(fence){for(let i=cursor+prefix;i<end;i++)emit(source[i],i,i+1);}else {const callout=source.slice(cursor+prefix,end).match(/^\[![^\]]+\][+-]?\s*/)?.[0].length||0;inline(cursor+prefix+callout,end);}
   emit('\n',end,Math.min(end+1,source.length));cursor=end+1;
  }
  if(chars.at(-1)==='\n'&&!source.endsWith('\n')){chars.pop();offsets.pop();}
  return {text:chars.join(''),offsets};
 }
-function visibleMap(source,visible,base=0) {
- const projected=projectMarkdown(source);const compact=(text)=>{let value='',indices=[];for(let i=0;i<text.length;i++)if(!/[\s\u200b\ufeff]/.test(text[i])){value+=text[i];indices.push(i);}return {value,indices};};
- const a=compact(projected.text),b=compact(visible);if(!b.value)return null;const hits=occurrences(a.value,b.value);if(hits.length!==1)return null;
+// Math is an atomic rendered object: every selected glyph anchors to its full TeX expression.
+function renderedProjection(source,referenceSource=source,preserveReferences=false){
+ const ranges=[];let i=0,fence=null;while(i<source.length){
+  if(i===0||source[i-1]==='\n'){const m=source.slice(i).match(/^\s*(?:>\s*)*(`{3,}|~{3,})/);if(m){fence=fence?null:m[1];const e=source.indexOf('\n',i);i=e<0?source.length:e+1;continue;}}
+  if(fence){i++;continue;}
+  if(source[i]==='\\'){i+=2;continue;}
+  if(source[i]==='`'){const tick=source.slice(i).match(/^`+/)[0],end=source.indexOf(tick,i+tick.length);i=end<0?i+tick.length:end+tick.length;continue;}
+  if(source[i]!=='$'){i++;continue;}const delimiter=source.startsWith('$$',i)?'$$':'$';if(delimiter==='$'&&/\s/.test(source[i+1]||'')){i++;continue;}
+  let end=i+delimiter.length;while((end=source.indexOf(delimiter,end))>=0){let escapes=0;for(let k=end-1;k>=0&&source[k]==='\\';k--)escapes++;if(escapes%2===0&&(delimiter==='$$'||!/[\s]/.test(source[end-1])&&!/\d/.test(source[end+1]||'')))break;end+=delimiter.length;}
+  if(end<0||delimiter==='$'&&/[\n`]/.test(source.slice(i+1,end))){i+=delimiter.length;continue;}
+  ranges.push({from:i,to:end+delimiter.length});i=end+delimiter.length;
+ }
+ let masked=source;for(const r of [...ranges].reverse())masked=masked.slice(0,r.from)+'\ufff9'+' '.repeat(r.to-r.from-1)+masked.slice(r.to);
+ const projected=projectMarkdown(masked,{referenceSource,preserveReferences}),byStart=new Map(ranges.map(r=>[r.from,r]));for(let j=0;j<projected.offsets.length;j++){const p=projected.offsets[j],r=byStart.get(p.from);if(r)projected.offsets[j]=r;}return projected;
+}
+// Sidebar excerpts render only TeX; surrounding content stays plain text.
+function mathRuns(source){const projected=renderedProjection(source),runs=[];let plain='';const flush=()=>{if(plain){runs.push({kind:'text',text:plain});plain='';}};
+ for(let i=0;i<projected.text.length;i++){const p=projected.offsets[i];if(projected.text[i]==='\ufff9'&&source[p.from]==='$'){flush();const raw=source.slice(p.from,p.to),display=raw.startsWith('$$'),size=display?2:1;let tex=raw.slice(size,-size);if(display&&/\n[ \t]*>+[ \t]*\$\$$/.test(raw))tex=tex.replace(/(^|\n)[ \t]*(?:>[ \t]?)+/g,'$1');runs.push({kind:'math',tex:tex.trim(),display});while(i+1<projected.offsets.length&&projected.offsets[i+1].from<p.to)i++;}else plain+=projected.text[i];}flush();if(runs[0]?.kind==='text')runs[0].text=runs[0].text.trimStart();if(runs.at(-1)?.kind==='text')runs.at(-1).text=runs.at(-1).text.trimEnd();return runs.filter(r=>r.kind==='math'||r.text);
+}
+module.exports.mathRuns=mathRuns;
+function visibleMap(source,visible,base=0,options={}) {
+ let projected=options.math?renderedProjection(source,options.referenceSource||source):projectMarkdown(source,options);const compact=(text)=>{let value='',indices=[];for(let i=0;i<text.length;i++)if(!/[\s\u200b\ufeff]/.test(text[i])){value+=text[i];indices.push(i);}return {value,indices};};
+ let a=compact(projected.text);const b=compact(visible);if(!b.value)return null;let hits=occurrences(a.value,b.value);if(!hits.length){projected=options.math?renderedProjection(source,options.referenceSource||source,true):projectMarkdown(source,{...options,preserveReferences:true});a=compact(projected.text);hits=occurrences(a.value,b.value);}if(hits.length!==1)return null;
  const map=Array(visible.length).fill(null);for(let j=0;j<b.indices.length;j++){const p=projected.offsets[a.indices[hits[0]+j]];map[b.indices[j]]={from:base+p.from,to:base+p.to};}return map;
 }
 module.exports.projectMarkdown=projectMarkdown;module.exports.visibleMap=visibleMap;
@@ -179,14 +206,20 @@ module.exports.dismissSheet=dismissSheet;
 
 // Validate editor offsets against the actual DOM selection before saving an anchor.
 // Live Preview can reveal Markdown prefixes while a mouse selection is in progress.
-function editorSelectionBounds(source,selected,candidates){
+function editorSelectionBounds(source,selected,candidates,options={}){
  const compact=s=>s.replace(/[\s\u200b\ufeff]/g,'');const wanted=compact(selected),visible=projectMarkdown(selected).text,wantedVisible=compact(visible);if(!wanted)return null;
  const valid=candidates.filter(p=>Number.isInteger(p.from)&&Number.isInteger(p.to)&&p.from>=0&&p.to>=p.from&&p.to<=source.length);
- for(const p of valid){if(p.to===p.from)continue;const raw=source.slice(p.from,p.to);if(compact(raw)===wanted||(wantedVisible&&compact(projectMarkdown(raw).text)===wantedVisible))return p;}
+ for(const p of valid){if(p.to===p.from)continue;const raw=source.slice(p.from,p.to);if(options.math){const map=visibleMap(raw,visible,p.from,options);const offsets=map?.filter(Boolean);if(offsets?.length)return {from:offsets[0].from,to:offsets.at(-1).to};}if(compact(raw)===wanted||(wantedVisible&&compact(projectMarkdown(raw).text)===wantedVisible))return p;}
  for(const p of valid){const start=source.lastIndexOf('\n',Math.max(-1,p.from-1))+1;const endAt=source.indexOf('\n',p.to);const end=endAt<0?source.length:endAt;const scope=source.slice(start,end);const exact=occurrences(scope,selected);
   if(exact.length===1)return {from:start+exact[0],to:start+exact[0]+selected.length};
-  const map=visibleMap(scope,visible,start);if(map){const offsets=map.filter(Boolean);if(offsets.length)return {from:Math.min(...offsets.map(x=>x.from)),to:Math.max(...offsets.map(x=>x.to))};}
+  const map=visibleMap(scope,visible,start,options);if(map){const offsets=map.filter(Boolean);if(offsets.length)return {from:Math.min(...offsets.map(x=>x.from)),to:Math.max(...offsets.map(x=>x.to))};}
  }
  return null;
 }
 module.exports.editorSelectionBounds=editorSelectionBounds;
+
+function mathBounds(source){const p=renderedProjection(source);return p.offsets.filter((r,i)=>p.text[i]==='\ufff9'&&source[r.from]==='$');}
+module.exports.mathBounds=mathBounds;
+
+function visualMarkLines(rects){const lines=[];for(const b of rects.filter(b=>b.right>b.left&&b.bottom>b.top).sort((a,b)=>a.top-b.top||a.left-b.left)){const line=lines.find(l=>Math.min(l.bottom,b.bottom)>Math.max(l.top,b.top));if(line){line.left=Math.min(line.left,b.left);line.right=Math.max(line.right,b.right);line.top=Math.min(line.top,b.top);line.bottom=Math.max(line.bottom,b.bottom);}else lines.push({...b});}return lines;}
+module.exports.visualMarkLines=visualMarkLines;

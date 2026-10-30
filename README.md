@@ -48,6 +48,8 @@ Choose **Export**, then select excerpts using the rows or their checkboxes. All 
 
 ## Customize
 
+Yellow is Color 1 and the default for new installations; teal is Color 2. Existing highlights keep their colors.
+
 Open **Settings → Easy Text Highlighter** to choose five custom colors, the default pen/color, line thickness, highlight height, and background opacity. Changing a palette color updates existing highlights and the sidebar.
 
 Languages: English, Traditional Chinese, Simplified Chinese, Japanese, Korean, Spanish, French, German, Portuguese, and Italian. **Auto** follows Obsidian.

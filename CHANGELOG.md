@@ -1,5 +1,30 @@
 # Release notes
 
+## 1.1.1 — 2026-10-30 · Bug fixes
+
+- Fix selection and saved marks in callouts, quotes and tables containing math, images or missing-image placeholders, including nested callouts and Live Preview table cells.
+- Allow selecting rendered display formulas in Live Preview without opening their TeX source. Render Markdown formulas in sidebar excerpts.
+- Keep highlighter backgrounds, underlines and waves continuous across prose and formulas; fit display-math backgrounds to the formula and keep Obsidian’s edit control at the block’s top-right corner.
+- Skip image/error UI when selecting mixed image-and-text passages, and remove leading/trailing placeholder blank lines from excerpts.
+- Disable annotation toolbars on filename titles and remove per-highlight hover popups. Simplify the sidebar header to its count, actions and divider.
+- Show yellow as Color 1 and teal as Color 2. New installations start with yellow (Color 1); existing saved color choices and annotations retain their colors.
+- Fix build-time handling of dollar signs in bundled source.
+
+### 中文
+
+- 修正包含公式、圖片、失效圖片的提示框、引用、巢狀提示框與表格的選字和標記顯示問題，涵蓋 Reading 與 Editing／Live Preview。
+- Live Preview 可直接選取排版好的區塊公式，不必先進入 TeX 原始碼；側欄摘錄支援公式排版。
+- 修正文字與公式之間的馬克筆、直線及波浪線斷開；公式底色貼合內容，保留原本右上角的編輯按鈕位置。
+- 圖片與文字混合選取會略過圖片及錯誤提示，摘錄不再帶入多餘首尾空行。
+- 檔名不再顯示標記工具列；移除摘錄懸停提示框，簡化側欄上方標題與檔名，保留數量、按鈕及分隔線。
+- 黃色與藍綠色交換顯示位置：黃色為 Color 1，藍綠色為 Color 2。全新安裝預設黃色，不覆蓋既有配色選擇或標記資料；修正建置時對美元符號的處理。
+
+### Validation and known limits
+
+- 131 automated behavior tests, reproducible build and release checks pass. Reported Markdown cases were checked in Obsidian 1.14.5 on macOS in Reading and Live Preview, including reload persistence and native edit-control placement.
+- Obsidian’s ordinary blockquote/code-fence Live Preview parsing limitation remains upstream. Extra indentation before code fences is Markdown formatting and was corrected only in the local QA example.
+- PDF files remain unchanged. Physical iOS/Android testing is still pending.
+
 ## 1.1.0 — 2026-10-28
 
 - Highlight selectable text in the built-in PDF reader using the same three pens and five colors. PDF files remain unchanged.

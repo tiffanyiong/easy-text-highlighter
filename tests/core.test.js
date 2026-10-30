@@ -137,7 +137,7 @@ test('palette falls below when toolbar has no room above, including keyboard vie
  assert.equal(paletteSide({left:40,right:100,top:100,bottom:120},{width:144,height:40},{width:156,height:36},{left:0,top:100,width:390,height:240}),'below');
 });
 
-test('custom factory colors display blue yellow green red purple without changing stored identities',()=>{assert.deepEqual(PALETTE.map(c=>c.id),['slot-5','slot-2','slot-1','slot-3','slot-4']);assert.deepEqual(PALETTE.map(c=>c.hex),['#a9eae2','#fdf85d','#91f476','#f7a3b3','#ceaef4']);});
+test('factory colors display yellow teal green red purple without changing stored identities',()=>{assert.deepEqual(PALETTE.map(c=>c.id),['slot-2','slot-5','slot-1','slot-3','slot-4']);assert.deepEqual(PALETTE.map(c=>c.hex),['#fdf85d','#a9eae2','#91f476','#f7a3b3','#ceaef4']);});
 const {highlightOutline,outlineMarkdown}=require('../core');
 test('outline groups only current-note marks under nearest heading with ancestors and article order',()=>{
  const text='Intro text\n# Chapter\nfirst\n## Section\nsecond\n### Detail\nthird\n## Empty\nnone';const record=(quote,id,path='a.md')=>({id,path,...anchor(text,text.indexOf(quote),text.indexOf(quote)+quote.length),style:'highlight',color:id});
@@ -172,3 +172,33 @@ test('editor range validation preserves correct source spans for all heading lev
  const source='## **中文 heading**';assert.deepEqual(editorSelectionBounds(source,'中文 heading',[{from:3,to:source.length}]),{from:3,to:source.length});
  assert.equal(editorSelectionBounds('## 重複 重複','重複',[{from:0,to:1}]),null);
 });
+
+test('callout tables map cells without quote prefixes, pipes or separator rows',()=>{
+ const source='> [!question] Metrics\n> | Metric | Meaning |\n> | --- | --- |\n> | Precision | True positives |';const visible='MetricsMetricMeaningPrecisionTrue positives';const map=visibleMap(source,visible);assert.ok(map);const a=visible.indexOf('True');assert.equal(source.slice(map[a].from,map.at(-1).to),'True positives');
+});
+test('a rendered formula maps atomically without blocking surrounding callout text',()=>{
+ const source='> [!question] Metrics\n> Short answer: Precision.\n> Formula: $P=\\frac{TP}{TP+FP}$ and recall.';const visible='MetricsShort answer: Precision.Formula: \ufff9 and recall.';const map=visibleMap(source,visible,0,{math:true});assert.ok(map);const m=map[visible.indexOf('\ufff9')];assert.equal(source.slice(m.from,m.to),'$P=\\frac{TP}{TP+FP}$');const at=visible.indexOf('Precision');assert.equal(source.slice(map[at].from,map[at+8].to),'Precision');
+});
+
+test('rendered math mapping leaves currency and inline code literal',()=>{for(const source of ['Cost $5 and $10 today.','Use `price $5 and $10` here.'])assert.ok(visibleMap(source,projectMarkdown(source).text,0,{math:true}));});
+test('single-column table formulas retain an exact atomic source anchor',()=>{const source='| Formula |\n| --- |\n| $P=TP/(TP+FP)$ |';const visible='Formula\ufff9';const map=visibleMap(source,visible,0,{math:true});assert.ok(map);assert.equal(source.slice(map.at(-1).from,map.at(-1).to),'$P=TP/(TP+FP)$');});
+
+for(const [name,body] of [
+ ['wiki image','![[QA image.svg]]'],['resized wiki image','![[QA image.svg|180]]'],['image alias','![[QA image.svg|Preview]]'],['markdown image','![Preview](QA%20image.svg)'],['remote image','![Preview](https://example.invalid/image.png)'],['missing image','![[missing-qa-image.png]]'],['reference image','![Preview][picture]\n> [picture]: QA%20image.svg']
+])test('text around '+name+' remains selectable in callouts',()=>{const source='> [!note] Media\n> Before image.\n> '+body+'\n> After image.';const visible='MediaBefore image.After image.';const map=visibleMap(source,visible,0,{math:true});assert.ok(map);const at=visible.indexOf('After');assert.equal(source.slice(map[at].from,map.at(-1).to),'After image.');});
+test('quote code fences preserve literal punctuation and ignore the quote markers',()=>{const source='> Before.\n> ```js\n> const value = "$5";\n> ```\n> After.';const visible='Before.const value = "$5";After.';assert.ok(visibleMap(source,visible,0,{math:true}));});
+test('a nested quote with image, formula and table keeps exact text offsets',()=>{const source='> Outer.\n> > [!tip] Nested\n> > ![[QA image.svg|100]]\n> > Formula $x^2$.\n> > | Key | Value |\n> > | --- | --- |\n> > | alpha | beta |\n> > Tail 中文 🏝️.';const visible='Outer.NestedFormula \ufff9.KeyValuealphabetaTail 中文 🏝️.';const map=visibleMap(source,visible,0,{math:true});assert.ok(map);const at=visible.indexOf('中文');assert.equal(source.slice(map[at].from,map.at(-1).to),'中文 🏝️.');});
+test('image-looking source inside inline code is still literal selectable text',()=>{const source='Use `![[not-an-image.png]]` here.';assert.ok(visibleMap(source,'Use ![[not-an-image.png]] here.',0,{math:true}));});
+
+test('linked Markdown images do not leak alt text or destinations into the visible map',()=>{const source='Before [![Preview](qa.png)](https://example.invalid/view) after.';assert.ok(visibleMap(source,'Before  after.',0,{math:true}));});
+test('undefined image references remain literal and duplicate blocks are not guessed',()=>{const literal='Before ![missing][unknown] after.';assert.equal(projectMarkdown(literal).text,literal);assert.equal(visibleMap('> Repeat.\n\n> Repeat.','Repeat.',0,{math:true}),null);});
+test('reference image definitions outside a rendered section do not block that section',()=>{const section='> [!note] Reference\n> Before.\n> ![Preview][picture]\n> After.';const source=section+'\n\n[picture]: assets/image.png';const map=visibleMap(section,'ReferenceBefore.After.',0,{math:true,referenceSource:source});assert.ok(map);assert.equal(source.slice(map.at(-1).from,map.at(-1).to),'.');});
+test('unresolved reference images shown literally by a Live Preview widget still map with a global definition',()=>{const section='> [!note] Reference\n> Before.\n> ![Fixture][picture]\n> After.';const whole=section+'\n\n[picture]: image.png';const map=visibleMap(section,'ReferenceBefore.![Fixture][picture]After.',0,{math:true,referenceSource:whole});assert.ok(map);assert.equal(section.slice(map.at(-6).from,map.at(-1).to),'After.');});
+test('a media selection anchor trims the image and blank lines before the actual quote',()=>{const {editorSelectionBounds}=require('../core');const source='> ![[valid-image.svg]]\n>\n> NestedText: 中文 and English 🏝️.';const result=editorSelectionBounds(source,'> NestedText: 中文 and English 🏝️.',[{from:0,to:source.length}],{math:true,referenceSource:source});assert.ok(result);assert.equal(source.slice(result.from,result.to),'NestedText: 中文 and English 🏝️.');});
+test('math excerpt runs preserve text and exact TeX without dollar delimiters or padding',()=>{const {mathRuns}=require('../core');assert.deepEqual(mathRuns('**Formula** $x^2+y^2=z^2$.'),[{kind:'text',text:'Formula '},{kind:'math',tex:'x^2+y^2=z^2',display:false},{kind:'text',text:'.'}]);assert.deepEqual(mathRuns('$$\nP=\\frac{TP}{TP+FP}\n$$'),[{kind:'math',tex:'P=\\frac{TP}{TP+FP}',display:true}]);assert.ok(!mathRuns('Cost $5 and $10; use `$x$`.').some(r=>r.kind==='math'));});
+
+test('math source bounds distinguish repeated expressions and ignore literal code',()=>{const {mathBounds}=require('../core');const source='First $x^2$ then $x^2$ and `$fake$`.';const ranges=mathBounds(source);assert.equal(ranges.length,2);assert.equal(source.slice(ranges[0].from,ranges[0].to),'$x^2$');assert.equal(source.slice(ranges[1].from,ranges[1].to),'$x^2$');assert.notEqual(ranges[0].from,ranges[1].from);});
+
+test('formula and prose share one continuous mark per wrapped visual line',()=>{const {visualMarkLines}=require('../core');const lines=visualMarkLines([{left:10,right:70,top:10,bottom:30},{left:70,right:150,top:3,bottom:34},{left:150,right:155,top:10,bottom:30},{left:10,right:60,top:42,bottom:62}]);assert.deepEqual(lines,[{left:10,right:155,top:3,bottom:34},{left:10,right:60,top:42,bottom:62}]);});
+
+test('fresh installs start with visible Color 1 while existing choices are preserved',()=>{assert.equal(settings().color,PALETTE[0].id);assert.equal(migrateData().settings.color,PALETTE[0].id);assert.equal(settings({color:'slot-2'}).color,'slot-2');assert.equal(settings({color:'slot-4'}).color,'slot-4');});
