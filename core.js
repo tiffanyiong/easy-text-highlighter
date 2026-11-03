@@ -49,6 +49,9 @@ function occurrences(text,quote) {const out=[]; if(!quote)return out; let i=0; w
 function resolve(record,text) {
  const hits=occurrences(text,record.quote); if(hits.length===1)return {from:hits[0],to:hits[0]+record.quote.length};
  const contextual=hits.filter(i=>(!record.before||text.slice(Math.max(0,i-record.before.length),i)===record.before)&&(!record.after||text.slice(i+record.quote.length,i+record.quote.length+record.after.length)===record.after));
+ // Identical passages may share all context. Retain a still-valid selection offset,
+ // but only after checking context so inserted duplicates cannot steal a mark.
+ if(contextual.length>1&&contextual.includes(record.from)&&record.to===record.from+record.quote.length)return {from:record.from,to:record.to};
  return contextual.length===1?{from:contextual[0],to:contextual[0]+record.quote.length}:null;
 }
 function place(rect,size,vp) {

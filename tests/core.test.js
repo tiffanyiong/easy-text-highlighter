@@ -17,6 +17,16 @@ test('context disambiguates repeated text',()=>{
  const text='one ABC first\nother ABC last',i=text.lastIndexOf('ABC');const r=anchor(text,i,i+3);
  const next='prefix '+text;const p=resolve(r,next);assert.equal(p.from,next.lastIndexOf('ABC'));
 });
+test('identical math passages can each be highlighted at their selected position',()=>{
+ const paragraph='> '+('Earlier context. '.repeat(4))+'$V$ is vocabulary or entity count, $d$ embedding dimension, and $E$ the learned table with one row per entity.';
+ const text=paragraph+'\n\n'+paragraph,quote='$V$ is vocabulary or entity count, $d$ embedding';
+ for(const from of [text.indexOf(quote),text.lastIndexOf(quote)]){
+  const pending={path:'note.md',...anchor(text,from,from+quote.length)};
+  const result=upsert([],pending,text,{style:'highlight'},{color:'slot-2',style:'highlight'},'new');
+  assert.ok(result,'a fresh selection in repeated content must be saved');
+  assert.equal(result.record.from,from);assert.equal(result.record.to,from+quote.length);
+ }
+});
 test('toolbar stays inside narrow, landscape, keyboard and zoom viewports',()=>{
  for(const [width,height,top,left] of [[320,568,0,0],[375,240,0,0],[390,844,0,0],[844,250,0,0],[240,350,130,45]]){
   for(const rect of [{left,right:left+50,top,bottom:top+24},{left:left+width-20,right:left+width,top:top+height-20,bottom:top+height}]){

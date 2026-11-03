@@ -1,5 +1,21 @@
 # Release notes
 
+## 1.1.3 — 2026-11-03 · Bug fix
+
+- Fix highlighting identical passages that share the same surrounding text. A selection whose saved position, text, and context still match now resolves to that position instead of showing “Original text changed; locate manually.”
+- Repeated passages can be highlighted and recolored independently, including selections mixing rendered math and prose.
+
+### 中文
+
+- 修正重複段落及前後文完全相同時，劃線誤報「原文已變動」的問題。原選取位置、文字及上下文仍吻合時，使用該位置定位。
+- 相同段落可各自劃線及改色，包含混合數學公式與文字的選取。
+
+### Validation
+
+- 145 automated tests pass, including a regression test for highlighting each of two identical math passages.
+- Build and release checks pass. Lint reports no errors (28 existing warnings).
+- Manually verified both occurrences in Obsidian 1.14.5 Reading view on macOS: separate highlights at the correct source positions; recoloring the second leaves the first unchanged.
+
 ## 1.1.2 — 2026-10-30 · Bug fixes
 
 - Wait until pointer release before showing the selection toolbar, avoiding incomplete ranges captured during a drag.
