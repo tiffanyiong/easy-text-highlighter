@@ -1,5 +1,28 @@
 # Release notes
 
+## 1.1.4 — 2026-11-19 · Embedded highlight fixes and text sizing
+
+- Fix the missing selection toolbar inside Markdown block embeds in Reading View and Editing View (Live Preview).
+- Map embedded selections to the original source block so highlights are saved at the correct position and appear in the original text and embedded copy.
+- Make sidebar excerpt text follow the note's text size by default.
+- Add **Highlights text size** in plugin settings: **Follow note text** or a custom size from **10–28 px**. The choice is saved and applies to the sidebar without changing note text.
+- Translate the new setting into every supported interface language.
+
+### 中文
+
+- 修正 Reading View 與 Editing View（Live Preview）中，Markdown 區塊嵌入內容無法顯示選字工具列的問題。
+- 將嵌入選取範圍對應到原始區塊，讓高光儲存在正確位置，並顯示於原文及嵌入副本。
+- 側欄摘錄文字預設跟隨筆記正文大小。
+- 插件設定新增 **摘錄文字大小**：可選 **跟隨筆記正文** 或 **10–28 px**，設定會儲存，只調整側欄，不改變筆記文字大小。
+- 所有支援的介面語言均補上新設定翻譯。
+
+### Validation
+
+- 150 automated tests pass, including block embeds in both modes, same-note and other-note source mapping, and text-size persistence.
+- Build and release checks pass. Lint reports no errors and 28 existing warnings.
+- Verified on macOS with Obsidian 1.15.0: the original study note's embedded block shows the toolbar in both modes at the same source offset. A QA highlight appears in both the original block and its embedded copy.
+- Verified sidebar default size matches the note at 13 px, custom 18 px applies to every excerpt, and Follow note text restores the default. Mobile was not manually tested.
+
 ## 1.1.3 — 2026-11-03 · Bug fix
 
 - Fix highlighting identical passages that share the same surrounding text. A selection whose saved position, text, and context still match now resolves to that position instead of showing “Original text changed; locate manually.”

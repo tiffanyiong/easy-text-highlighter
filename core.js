@@ -15,7 +15,7 @@ const PALETTE=[
  ['slot-3','Color 4','顏色 4','#f7a3b3'],
  ['slot-4','Color 5','顏色 5','#ceaef4']
 ].map(([id,en,zh,hex])=>({id,en,zh,hex}));
-const DEFAULTS={language:'auto',color:PALETTE[0].id,style:'highlight',height:2,width:2,opacity:.3,colors:Object.fromEntries(PALETTE.map(c=>[c.id,c.hex]))};
+const DEFAULTS={language:'auto',color:PALETTE[0].id,style:'highlight',sidebarFontSize:0,height:2,width:2,opacity:.3,colors:Object.fromEntries(PALETTE.map(c=>[c.id,c.hex]))};
 const validHex=x=>typeof x==='string'&&/^#[\da-f]{6}$/i.test(x);
 function settings(raw={}) {
  const n=(x,min,max,d)=>Number.isFinite(x)?Math.max(min,Math.min(max,x)):d;
@@ -25,7 +25,7 @@ function settings(raw={}) {
   // Preserve deliberate custom colors; refresh the old factory palette to softer defaults.
   return [c.id,validHex(raw.colors?.[c.id])?raw.colors[c.id]:(validHex(old)&&old!==oldDefault?old:c.hex)];
  }));
- return {language:['auto','en','zh','zh-CN','ja','ko','es','fr','de','pt','it'].includes(raw.language)?raw.language:'auto',color:raw.color==null?DEFAULTS.color:PALETTE.some(c=>c.id===raw.color)?raw.color:legacySlot(raw.color,raw,colors),style:['highlight','underline','wave'].includes(raw.style)?raw.style:'highlight',height:n(raw.height,0,5,2),width:n(raw.width,1,5,2),opacity:n(raw.opacity,.1,.7,.3),colors};
+ return {language:['auto','en','zh','zh-CN','ja','ko','es','fr','de','pt','it'].includes(raw.language)?raw.language:'auto',color:raw.color==null?DEFAULTS.color:PALETTE.some(c=>c.id===raw.color)?raw.color:legacySlot(raw.color,raw,colors),style:['highlight','underline','wave'].includes(raw.style)?raw.style:'highlight',sidebarFontSize:raw.sidebarFontSize===0?0:n(raw.sidebarFontSize,10,28,0),height:n(raw.height,0,5,2),width:n(raw.width,1,5,2),opacity:n(raw.opacity,.1,.7,.3),colors};
 }
 function legacySlot(color,raw={},colors=DEFAULTS.colors,hex){
  if(PALETTE.some(c=>c.id===color))return color;

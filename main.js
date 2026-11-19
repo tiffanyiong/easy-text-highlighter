@@ -3,6 +3,8 @@ const {LANGUAGES,TRANSLATIONS,locale}=(()=>{const module={exports:{}};
 const LANGUAGES={"auto": "Auto", "en": "English", "zh": "繁體中文", "zh-CN": "简体中文", "ja": "日本語", "ko": "한국어", "es": "Español", "fr": "Français", "de": "Deutsch", "pt": "Português", "it": "Italiano"};
 const TRANSLATIONS={
   "zh-CN": {
+    "sidebarFontSize": "摘录文字大小",
+    "followNoteText": "跟随笔记正文",
     "page": "页",
     "filterTitle": "筛选你的摘录",
     "swipeClose": "向下拖动关闭",
@@ -62,6 +64,8 @@ const TRANSLATIONS={
     "sourceNote": "来源"
   },
   "ja": {
+    "sidebarFontSize": "ハイライトの文字サイズ",
+    "followNoteText": "ノート本文に合わせる",
     "page": "ページ",
     "filterTitle": "ハイライトを絞り込む",
     "swipeClose": "下にドラッグして閉じる",
@@ -121,6 +125,8 @@ const TRANSLATIONS={
     "sourceNote": "出典"
   },
   "ko": {
+    "sidebarFontSize": "하이라이트 글자 크기",
+    "followNoteText": "노트 본문에 맞춤",
     "page": "페이지",
     "filterTitle": "하이라이트 필터",
     "swipeClose": "아래로 끌어 닫기",
@@ -180,6 +186,8 @@ const TRANSLATIONS={
     "sourceNote": "출처"
   },
   "es": {
+    "sidebarFontSize": "Tamaño del texto resaltado",
+    "followNoteText": "Usar tamaño de la nota",
     "page": "Página",
     "filterTitle": "Filtrar tus resaltados",
     "swipeClose": "Arrastra hacia abajo para cerrar",
@@ -239,6 +247,8 @@ const TRANSLATIONS={
     "sourceNote": "Fuente"
   },
   "fr": {
+    "sidebarFontSize": "Taille du texte surligné",
+    "followNoteText": "Suivre le texte de la note",
     "page": "Page",
     "filterTitle": "Filtrer vos surlignages",
     "swipeClose": "Glissez vers le bas pour fermer",
@@ -298,6 +308,8 @@ const TRANSLATIONS={
     "sourceNote": "Source"
   },
   "de": {
+    "sidebarFontSize": "Textgröße der Markierungen",
+    "followNoteText": "Wie im Notiztext",
     "page": "Seite",
     "filterTitle": "Markierungen filtern",
     "swipeClose": "Zum Schließen nach unten ziehen",
@@ -357,6 +369,8 @@ const TRANSLATIONS={
     "sourceNote": "Quelle"
   },
   "pt": {
+    "sidebarFontSize": "Tamanho do texto destacado",
+    "followNoteText": "Usar tamanho da nota",
     "page": "Página",
     "filterTitle": "Filtrar destaques",
     "swipeClose": "Arraste para baixo para fechar",
@@ -416,6 +430,8 @@ const TRANSLATIONS={
     "sourceNote": "Origem"
   },
   "it": {
+    "sidebarFontSize": "Dimensione del testo evidenziato",
+    "followNoteText": "Usa dimensione della nota",
     "page": "Pagina",
     "filterTitle": "Filtra evidenziazioni",
     "swipeClose": "Trascina in basso per chiudere",
@@ -548,7 +564,7 @@ const PALETTE=[
  ['slot-3','Color 4','顏色 4','#f7a3b3'],
  ['slot-4','Color 5','顏色 5','#ceaef4']
 ].map(([id,en,zh,hex])=>({id,en,zh,hex}));
-const DEFAULTS={language:'auto',color:PALETTE[0].id,style:'highlight',height:2,width:2,opacity:.3,colors:Object.fromEntries(PALETTE.map(c=>[c.id,c.hex]))};
+const DEFAULTS={language:'auto',color:PALETTE[0].id,style:'highlight',sidebarFontSize:0,height:2,width:2,opacity:.3,colors:Object.fromEntries(PALETTE.map(c=>[c.id,c.hex]))};
 const validHex=x=>typeof x==='string'&&/^#[\da-f]{6}$/i.test(x);
 function settings(raw={}) {
  const n=(x,min,max,d)=>Number.isFinite(x)?Math.max(min,Math.min(max,x)):d;
@@ -558,7 +574,7 @@ function settings(raw={}) {
   // Preserve deliberate custom colors; refresh the old factory palette to softer defaults.
   return [c.id,validHex(raw.colors?.[c.id])?raw.colors[c.id]:(validHex(old)&&old!==oldDefault?old:c.hex)];
  }));
- return {language:['auto','en','zh','zh-CN','ja','ko','es','fr','de','pt','it'].includes(raw.language)?raw.language:'auto',color:raw.color==null?DEFAULTS.color:PALETTE.some(c=>c.id===raw.color)?raw.color:legacySlot(raw.color,raw,colors),style:['highlight','underline','wave'].includes(raw.style)?raw.style:'highlight',height:n(raw.height,0,5,2),width:n(raw.width,1,5,2),opacity:n(raw.opacity,.1,.7,.3),colors};
+ return {language:['auto','en','zh','zh-CN','ja','ko','es','fr','de','pt','it'].includes(raw.language)?raw.language:'auto',color:raw.color==null?DEFAULTS.color:PALETTE.some(c=>c.id===raw.color)?raw.color:legacySlot(raw.color,raw,colors),style:['highlight','underline','wave'].includes(raw.style)?raw.style:'highlight',sidebarFontSize:raw.sidebarFontSize===0?0:n(raw.sidebarFontSize,10,28,0),height:n(raw.height,0,5,2),width:n(raw.width,1,5,2),opacity:n(raw.opacity,.1,.7,.3),colors};
 }
 function legacySlot(color,raw={},colors=DEFAULTS.colors,hex){
  if(PALETTE.some(c=>c.id===color))return color;
@@ -839,7 +855,7 @@ const words={
  syncColors:['Changing a slot updates every highlight using it, including the sidebar.','修改色格會同步更新所有使用它的劃線與右側摘錄。'],styles:['Styles','樣式'],title:['Highlights','螢光標記'],mark:['Highlight','劃線'],remove:['Remove highlight','刪除劃線'],copy:['Copy','複製'],close:['Close','關閉'],
  custom:['Custom color','自選顏色'],highlight:['Highlighter','馬克筆'],underline:['Underline','下劃線'],wave:['Wavy underline','波浪線'],current:['This note','目前筆記'],all:['All notes','全部筆記'],
  empty:['Select text in a note, then choose Highlight.','選取筆記文字，再按「劃線」。'],missing:['Original text changed; locate manually.','原文已變動，請手動確認。'],
- language:['Language','語言'],defaultColor:['Default color','預設顏色'],defaultStyle:['Default style','預設樣式'],width:['Line thickness','線條粗細'],opacity:['Background opacity','底色不透明度'],palette:['Colors · ribbon palette','顏色 · 緞帶色盤'],
+ sidebarFontSize:['Highlights text size','摘錄文字大小'],followNoteText:['Follow note text','跟隨筆記正文'],language:['Language','語言'],defaultColor:['Default color','預設顏色'],defaultStyle:['Default style','預設樣式'],width:['Line thickness','線條粗細'],opacity:['Background opacity','底色不透明度'],palette:['Colors · ribbon palette','顏色 · 緞帶色盤'],
  swatches:['Toolbar colors','工具列配色'],slot:['Color','顏色'],height:['Highlight height','螢光底色高度'],scope:['Show highlights from','標記範圍'],export:['Export highlights','匯出標記'],unsupported:['Select plain text within one paragraph in Reading view, or use Editing view.','閱讀模式請選取同一段落內的純文字，或改用編輯模式。'],
  overlapping:['This selection overlaps another highlight. Edit or remove that highlight first.','此範圍與其他標記重疊，請先修改或刪除原有標記。'],
  saved:['Highlights stay in this vault’s plugin data. Notes remain unchanged. Back up data.json with your vault.','標記儲存在此庫的插件資料，筆記原文不變。請連同 data.json 備份。'],
@@ -987,7 +1003,7 @@ class Highlighter extends Plugin {
    const source=view.editor.getValue();
    for(const cm of this.editors){if(!view.contentEl.contains(cm.dom))continue;for(const math of view.contentEl.querySelectorAll('.cm-line .math,.cm-line .math-inline,.cm-line mjx-container,.cm-line .MathJax')){if(math.closest('.callout,.cm-table-widget')||math.parentElement?.closest('.math,.math-inline,mjx-container,.MathJax'))continue;if(!this.liveSections.has(math))this.liveSections.set(math,{el:math});this.unwrap(math);let pos;try{pos=cm.posAtDOM(math,0);}catch{try{pos=cm.posAtDOM(math.closest('.cm-line'),0);}catch{continue;}}const allMath=mathBounds(source);let bounds=allMath.filter(b=>b.from<=pos&&b.to>=pos);if(bounds.length!==1){const line=cm.state.doc.lineAt(pos);bounds=allMath.filter(b=>b.from>=line.from&&b.to<=line.to);}if(bounds.length!==1)continue;const b=bounds[0],r=this.records.find(r=>{const a=r.path===view.file.path&&resolve(r,source);return a&&a.from<b.to&&a.to>b.from;});if(!r)continue;const span=math.ownerDocument.createElement('span');span.className='aih-mark aih-'+r.style;span.dataset.aihId=r.id;span.setAttribute('style',this.markStyle(r));span.append(...math.childNodes);math.append(span);this.decorateMath(span,r);}}
    for(const el of view.contentEl.querySelectorAll('.callout,.cm-table-widget,.cm-embed-block.math,.cm-embed-block:has(.math-block)')){
-    if(el.parentElement?.closest('.callout'))continue;
+    if(el.closest?.('.markdown-embed')||el.parentElement?.closest('.callout'))continue;
     let entry=this.liveSections.get(el);if(!entry){entry={el,ctx:{sourcePath:view.file.path,getSectionInfo:()=>({lineStart:0,lineEnd:source.split('\n').length-1})}};this.liveSections.set(el,entry);}
     const stamp=this.revision+'\n'+source;if(entry.stamp===stamp)continue;entry.stamp=stamp;entry.ctx.sourcePath=view.file.path;entry.ctx.getSectionInfo=()=>({lineStart:0,lineEnd:source.split('\n').length-1});const math=el.matches?.('.math')?el:el.querySelector?.('.math-block');if(math&&!el.matches('.callout,.cm-table-widget')){const bounds=this.sourceMathBounds(math,source);if(!bounds)continue;entry.ctx.getSectionInfo=()=>({lineStart:source.slice(0,bounds.from).split('\n').length-1,lineEnd:source.slice(0,bounds.to).split('\n').length-1});}
     await this.renderSection(entry,source);
@@ -997,7 +1013,7 @@ class Highlighter extends Plugin {
  }
  renderedText(el){
   const walker=el.ownerDocument?.createTreeWalker?el.ownerDocument.createTreeWalker(el,5):this.doc.createTreeWalker(el,5),nodes=[],mathSeen=new Set();let visible='',node;
-  while((node=walker.nextNode())){const element=node.nodeType===1?node:node.parentElement;if(element?.closest?.('button,script,style,.copy-code-button,.collapse-indicator,.metadata-container,.cm-measure,.cm-placeholder,img,video,audio,iframe,.internal-embed,.image-embed,.media-embed,.markdown-embed'))continue;
+  while((node=walker.nextNode())){const element=node.nodeType===1?node:node.parentElement;const blocked=element?.closest?.('button,script,style,.copy-code-button,.collapse-indicator,.metadata-container,.cm-measure,.cm-placeholder,img,video,audio,iframe,.internal-embed,.image-embed,.media-embed,.markdown-embed,.markdown-embed-title,.markdown-embed-link');if(blocked&&!(blocked.matches?.('.markdown-embed')&&blocked.contains(el)))continue;
    const cell=element?.closest?.('td,th'),editor=cell?.querySelector?.('.cm-content');if(editor&&!editor.contains(node))continue;
    const math=element?.closest?.('.math');if(math){if(mathSeen.has(math))continue;mathSeen.add(math);nodes.push({node:math,start:visible.length,end:visible.length+1,atomic:true});visible+='\ufff9';continue;}
    if(node.nodeType===1)continue;nodes.push({node,start:visible.length,end:visible.length+node.textContent.length});visible+=node.textContent;
@@ -1010,15 +1026,27 @@ class Highlighter extends Plugin {
  selectionText(range,el){const {nodes}=this.renderedText(el);let result='',previousBlock;for(const item of nodes){if(!range.intersectsNode(item.node))continue;const from=item.atomic?0:range.startContainer===item.node?range.startOffset:0,to=item.atomic?1:range.endContainer===item.node?range.endOffset:item.node.length;if(to<=from)continue;const block=(item.atomic?item.node:item.node.parentElement)?.closest?.('.cm-line,p,li,td,th');if(result&&block&&previousBlock&&block!==previousBlock)result+='\n';result+=item.atomic?'\ufff9':item.node.textContent.slice(from,to);previousBlock=block;}return result;}
  selectionExcerpt(pieces,source){const ordered=[...new Map(pieces.map(p=>[p.from+':'+p.to,p])).values()].sort((a,b)=>a.from-b.from);let result='';for(let i=0;i<ordered.length;i++){const p=ordered[i];if(i){const gap=projectMarkdown(source.slice(ordered[i-1].to,p.from)).text;if(gap.includes('\n'))result+='\n';else if(/\s/.test(gap)&&!/[\s]$/.test(result)&&!/^\s/.test(p.text))result+=' ';}result+=p.text;}return result.replace(/[\u200b\ufeff\ufffc]/g,'').trim();}
  unwrap(el){for(const line of el.querySelectorAll('svg.aih-math-wave,.aih-math-baseline,.aih-unified-layer'))line.remove();for(const m of el.querySelectorAll('span[data-aih-id]'))m.replaceWith(...m.childNodes);el.normalize();}
+ sectionBounds(entry,source){
+  const info=entry.ctx.getSectionInfo(entry.el);if(!info)return null;
+  if(entry.el.closest?.('.markdown-embed')){
+   const embed=entry.el.closest('.markdown-embed'),id=embed.getAttribute('src')?.split('#^')[1];
+   const file=this.app.vault.getAbstractFileByPath(entry.ctx.sourcePath),block=id&&this.app.metadataCache?.getFileCache(file)?.blocks?.[id];
+   if(block)return {start:block.position.start.offset,end:block.position.end.offset};
+   const text=info.text;if(!text)return null;const start=source.indexOf(text);if(start<0||source.indexOf(text,start+1)>=0)return null;
+   return {start,end:start+text.length};
+  }
+  const lines=source.split('\n'),start=lines.slice(0,info.lineStart).join('\n').length+(info.lineStart?1:0);
+  return {start,end:start+lines.slice(info.lineStart,info.lineEnd+1).join('\n').length};
+ }
  async renderSection(entry,liveSource){
   const {el,ctx}=entry;
   if(this.selecting){(this.deferredSections||(this.deferredSections=new Set())).add(entry);return;}
-  if(liveSource===undefined&&el.closest?.('.markdown-source-view')&&(el.closest?.('.callout')||el.querySelector?.('.callout'))){this.scheduleLiveCallouts();return;}
+  if(liveSource===undefined&&!el.closest?.('.markdown-embed')&&el.closest?.('.markdown-source-view')&&(el.closest?.('.callout')||el.querySelector?.('.callout'))){this.scheduleLiveCallouts();return;}
   const revision=(entry.revision||0)+1;entry.revision=revision;const info=ctx.getSectionInfo(el);if(!info)return;
   const file=this.app.vault.getAbstractFileByPath(ctx.sourcePath);if(!file)return;
   const source=liveSource===undefined?await this.app.vault.cachedRead(file):liveSource;if(this.unloading||entry.revision!==revision)return;if(this.selecting){(this.deferredSections||(this.deferredSections=new Set())).add(entry);return;}
   this.unwrap(el);
-  const lines=source.split('\n');const start=lines.slice(0,info.lineStart).join('\n').length+(info.lineStart?1:0);const end=start+lines.slice(info.lineStart,info.lineEnd+1).join('\n').length;
+  const bounds=this.sectionBounds(entry,source);if(!bounds)return;const {start,end}=bounds;
   const doc=el.ownerDocument;const {nodes,visible:text}=this.renderedText(el);
   const mapping=visibleMap(source.slice(start,end),text,start,{math:true,referenceSource:source});if(!mapping)return;
   const ranges=[];
@@ -1046,10 +1074,11 @@ class Highlighter extends Plugin {
   const pdf=this.pdf?.capture(range);if(pdf){if(token!==this.selectionToken)return;this.pending=pdf.pending;this.rect=range.getBoundingClientRect();const existing=pdfSelected(this.records,pdf.pending);this.show(existing,false,!!existing&&pdfContains(existing,pdf.pending));return;}
   if(!(view instanceof MarkdownView)||!view.contentEl.contains(range.commonAncestorContainer))view=this.app.workspace.getLeavesOfType('markdown').map(l=>l.view).find(v=>v instanceof MarkdownView&&v.contentEl.contains(range.commonAncestorContainer));
   if(!view?.file)return this.hide();
-  const selectedElement=range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement;const callout=selectedElement?.closest?.('.callout');const widget=callout||selectedElement?.closest?.('td,th')||selectedElement?.closest?.('.cm-table-widget,table,.math,.aih-quote-code-preview');
-  let pending,source;
+  const selectedElement=range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement;const callout=selectedElement?.closest?.('.callout');const embed=selectedElement?.closest?.('.markdown-embed');if(embed&&!embed.contains(range.endContainer))return this.hide();const widget=embed||callout||selectedElement?.closest?.('td,th')||selectedElement?.closest?.('.cm-table-widget,table,.math,.aih-quote-code-preview');
+  let pending,source,targetPath=view.file.path;
+  if(embed){const paths=[...new Set([...this.sections].filter(e=>embed.contains(e.el)&&range.intersectsNode(e.el)).map(e=>e.ctx.sourcePath))];if(paths.length!==1)return this.hide();targetPath=paths[0];}
   const mathWidget=selectedElement?.closest?.('.math');
-  if(view.getMode()==='source'&&mathWidget&&!callout){
+  if(view.getMode()==='source'&&mathWidget&&!callout&&!embed){
    source=view.editor.getValue();const bounds=this.sourceMathBounds(mathWidget,source);if(!bounds)return this.hide();pending={path:view.file.path,...anchor(source,bounds.from,bounds.to)};
   }else if(view.getMode()==='source'&&!widget){
    const ed=view.editor;if(ed.listSelections().length!==1)return this.hide();source=ed.getValue();
@@ -1058,12 +1087,11 @@ class Highlighter extends Plugin {
    candidates.push({from:ed.posToOffset(ed.getCursor('from')),to:ed.posToOffset(ed.getCursor('to'))});
    let selected=sel.toString();const media=[...(view.contentEl.querySelectorAll?.('.internal-embed,img,.math')||[])].some(el=>range.intersectsNode(el));if(media)selected=this.selectionText(range,view.contentEl);const bounds=editorSelectionBounds(source,selected,candidates,{math:media,referenceSource:source});if(!bounds)return this.hide();pending={path:view.file.path,...anchor(source,bounds.from,bounds.to)};
   }else{
-   const text=view.getMode()==='source'?view.editor.getValue():await this.app.vault.cachedRead(view.file);source=text;let selectionFrom=Infinity,selectionTo=-Infinity;const pieces=[];
-   const entries=[...this.sections];if(widget&&view.contentEl.contains(widget))entries.push({el:widget,ctx:{sourcePath:view.file.path,getSectionInfo:()=>({lineStart:0,lineEnd:text.split('\n').length-1})}});
+   const targetFile=targetPath===view.file.path?view.file:this.app.vault.getAbstractFileByPath(targetPath);if(!targetFile)return this.hide();const text=view.getMode()==='source'&&targetPath===view.file.path?view.editor.getValue():await this.app.vault.cachedRead(targetFile);source=text;let selectionFrom=Infinity,selectionTo=-Infinity;const pieces=[];
+   const entries=[...this.sections];if(widget&&!embed&&view.contentEl.contains(widget))entries.push({el:widget,ctx:{sourcePath:view.file.path,getSectionInfo:()=>({lineStart:0,lineEnd:text.split('\n').length-1})}});
    for(const entry of entries){
-    if(entry.ctx.sourcePath!==view.file.path||!view.contentEl.contains(entry.el)||!range.intersectsNode(entry.el))continue;
-    const info=entry.ctx.getSectionInfo(entry.el);if(!info)continue;
-    const lines=text.split('\n');const start=lines.slice(0,info.lineStart).join('\n').length+(info.lineStart?1:0),end=start+lines.slice(info.lineStart,info.lineEnd+1).join('\n').length;
+    if(entry.ctx.sourcePath!==targetPath||!view.contentEl.contains(entry.el)||!range.intersectsNode(entry.el)||(embed&&!embed.contains(entry.el)))continue;
+    const bounds=this.sectionBounds(entry,text);if(!bounds)continue;const {start,end}=bounds;
     const {nodes,visible}=this.renderedText(entry.el);
     const mapping=visibleMap(text.slice(start,end),visible,start,{math:true,referenceSource:text});if(!mapping)continue;
     for(const item of nodes){if(!range.intersectsNode(item.node))continue;const from=item.atomic?0:range.startContainer===item.node?range.startOffset:0,to=item.atomic?1:range.endContainer===item.node?range.endOffset:item.node.length;
@@ -1072,7 +1100,7 @@ class Highlighter extends Plugin {
    }
    if(!Number.isFinite(selectionFrom))return this.hide();
    const from=selectionFrom,to=selectionTo;
-   pending={path:view.file.path,...anchor(text,from,to),display:this.selectionExcerpt(pieces,text)};
+   pending={path:targetPath,...anchor(text,from,to),display:this.selectionExcerpt(pieces,text)};
   }
   if(token!==this.selectionToken)return;this.pending=pending;this.rect=range.getBoundingClientRect();const existing=selectedMark(this.records,pending,source);const bounds=existing&&resolve(existing,source);this.show(existing,false,!!bounds&&pending.from>=bounds.from&&pending.to<=bounds.to);
  }
@@ -1198,7 +1226,7 @@ class HighlightsView extends ItemView {
  }
  async render(){
   const token=++this.renderToken,p=this.plugin,c=this.contentEl;const model=await p.noteHighlights(this.applied);if(token!==this.renderToken)return;
-  c.empty();c.addClass('aih-sidebar');
+  c.empty();c.addClass('aih-sidebar');c.style.setProperty('--aih-sidebar-font-size',p.settings.sidebarFontSize?p.settings.sidebarFontSize+'px':'var(--font-text-size,16px)');
   if(!model){this.exportMode=false;this.selected.clear();c.createEl('p',{text:p.t('openNote'),cls:'aih-empty'});return;}
   if(this.exportMode&&this.exportPath!==model.file.path){this.exportMode=false;this.selected.clear();}
   const visible=model.records.filter(r=>matchesHighlightFilter(r,this.applied));const visibleIds=new Set(visible.map(r=>r.id));this.selected=new Set([...this.selected].filter(id=>visibleIds.has(id)));
@@ -1270,6 +1298,7 @@ class HighlightSettings extends PluginSettingTab {
   new Setting(c).setName(p.t('language')).addDropdown(d=>d.addOptions(LANGUAGES).setValue(p.settings.language).onChange(v=>{p.settings.language=v;save();this.display();}));
   new Setting(c).setName(p.t('defaultStyle')).addDropdown(d=>d.addOptions(Object.fromEntries(['highlight','underline','wave'].map(k=>[k,p.t(k)]))).setValue(p.settings.style).onChange(v=>{p.settings.style=v;save();}));
   new Setting(c).setName(p.t('defaultColor')).addDropdown(d=>d.addOptions(Object.fromEntries(PALETTE.map((c,i)=>[c.id,p.t('slot')+' '+(i+1)]))).setValue(p.settings.color).onChange(v=>{p.settings.color=v;save();}));
+  new Setting(c).setName(p.t('sidebarFontSize')).addDropdown(d=>d.addOptions(Object.fromEntries([['0',p.t('followNoteText')],...Array.from({length:19},(_,i)=>[String(i+10),(i+10)+' px'])])).setValue(String(p.settings.sidebarFontSize)).onChange(v=>{p.settings.sidebarFontSize=Number(v);save();}));
   new Setting(c).setName(p.t('width')).setDesc('1–5 px · '+p.settings.width+' px').addSlider(s=>s.setLimits(1,5,.5).setValue(p.settings.width).setDynamicTooltip().onChange(v=>{p.settings.width=v;save();}));
   new Setting(c).setName(p.t('opacity')).addSlider(s=>s.setLimits(.1,.7,.05).setValue(p.settings.opacity).setDynamicTooltip().onChange(v=>{p.settings.opacity=v;save();}));
   new Setting(c).setName(p.t('height')).setDesc('0–5 px').addSlider(s=>s.setLimits(0,5,.5).setValue(p.settings.height).setDynamicTooltip().onChange(v=>{p.settings.height=v;save();}));

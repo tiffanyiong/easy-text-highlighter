@@ -1,6 +1,8 @@
 const LANGUAGES={"auto": "Auto", "en": "English", "zh": "繁體中文", "zh-CN": "简体中文", "ja": "日本語", "ko": "한국어", "es": "Español", "fr": "Français", "de": "Deutsch", "pt": "Português", "it": "Italiano"};
 const TRANSLATIONS={
   "zh-CN": {
+    "sidebarFontSize": "摘录文字大小",
+    "followNoteText": "跟随笔记正文",
     "page": "页",
     "filterTitle": "筛选你的摘录",
     "swipeClose": "向下拖动关闭",
@@ -60,6 +62,8 @@ const TRANSLATIONS={
     "sourceNote": "来源"
   },
   "ja": {
+    "sidebarFontSize": "ハイライトの文字サイズ",
+    "followNoteText": "ノート本文に合わせる",
     "page": "ページ",
     "filterTitle": "ハイライトを絞り込む",
     "swipeClose": "下にドラッグして閉じる",
@@ -119,6 +123,8 @@ const TRANSLATIONS={
     "sourceNote": "出典"
   },
   "ko": {
+    "sidebarFontSize": "하이라이트 글자 크기",
+    "followNoteText": "노트 본문에 맞춤",
     "page": "페이지",
     "filterTitle": "하이라이트 필터",
     "swipeClose": "아래로 끌어 닫기",
@@ -178,6 +184,8 @@ const TRANSLATIONS={
     "sourceNote": "출처"
   },
   "es": {
+    "sidebarFontSize": "Tamaño del texto resaltado",
+    "followNoteText": "Usar tamaño de la nota",
     "page": "Página",
     "filterTitle": "Filtrar tus resaltados",
     "swipeClose": "Arrastra hacia abajo para cerrar",
@@ -237,6 +245,8 @@ const TRANSLATIONS={
     "sourceNote": "Fuente"
   },
   "fr": {
+    "sidebarFontSize": "Taille du texte surligné",
+    "followNoteText": "Suivre le texte de la note",
     "page": "Page",
     "filterTitle": "Filtrer vos surlignages",
     "swipeClose": "Glissez vers le bas pour fermer",
@@ -296,6 +306,8 @@ const TRANSLATIONS={
     "sourceNote": "Source"
   },
   "de": {
+    "sidebarFontSize": "Textgröße der Markierungen",
+    "followNoteText": "Wie im Notiztext",
     "page": "Seite",
     "filterTitle": "Markierungen filtern",
     "swipeClose": "Zum Schließen nach unten ziehen",
@@ -355,6 +367,8 @@ const TRANSLATIONS={
     "sourceNote": "Quelle"
   },
   "pt": {
+    "sidebarFontSize": "Tamanho do texto destacado",
+    "followNoteText": "Usar tamanho da nota",
     "page": "Página",
     "filterTitle": "Filtrar destaques",
     "swipeClose": "Arraste para baixo para fechar",
@@ -414,6 +428,8 @@ const TRANSLATIONS={
     "sourceNote": "Origem"
   },
   "it": {
+    "sidebarFontSize": "Dimensione del testo evidenziato",
+    "followNoteText": "Usa dimensione della nota",
     "page": "Pagina",
     "filterTitle": "Filtra evidenziazioni",
     "swipeClose": "Trascina in basso per chiudere",

@@ -263,3 +263,18 @@ for(const mode of ['source','preview'])for(const backwards of [false,true])test(
  p.doc={getSelection:()=>({isCollapsed:false,anchorNode:backwards?end:start,focusNode:backwards?start:end,toString:()=>line,getRangeAt:()=>range}),createTreeWalker:()=>{const copy=[...nodes];return {nextNode:()=>copy.shift()};}};
  const view=new p.MockMarkdown();view.file={path:'demo.md'};view.contentEl={contains:()=>true};view.getMode=()=>mode;view.editor={getValue:()=>source};p.currentView=()=>view;p.app.vault.cachedRead=async()=>source;p.sections=new Set();let shown=false;p.show=()=>{shown=true;};await p.capture();assert.equal(shown,true);assert.equal(p.pending.quote,line);assert.equal(p.pending.from,source.indexOf('Formula:'));assert.equal(p.pending.to,source.length);clean(p);
 });
+
+for(const mode of ['source','preview'])for(const sameFile of [true,false])test(mode+' highlights a '+(sameFile?'same-note':'other-note')+' block embed at its original source offset',async()=>{
+ const selected='300. Longest Increasing Subsequence',line='- [ ] ['+selected+'](https://example.com/) — Learn first. ^core-300';
+ const source='Repeated label: '+selected+'\n\n'+line+'\n\nEmbed: ![[demo#^core-300]]';
+ const path=sameFile?'demo.md':'original.md',p=await pluginWith({id:'unrelated',path:'unrelated.md',...anchor('Other',0,5),style:'highlight',color:'slot-1'});
+ let root,target;const embed={contains:n=>n===root||n===target,matches:s=>s==='.markdown-embed',getAttribute:()=> 'demo#^core-300'};
+ const parent={closest:q=>q==='.markdown-embed'||q.includes('.internal-embed')?embed:null};
+ target={nodeType:3,textContent:selected+' — Learn first.',length:(selected+' — Learn first.').length,parentElement:parent};root={closest:q=>q==='.markdown-embed'?embed:null};
+ const range={commonAncestorContainer:target,startContainer:target,endContainer:target,startOffset:0,endOffset:selected.length,intersectsNode:n=>n===target||n===root,getBoundingClientRect:()=>({left:1,top:2,right:300,bottom:30})};
+ p.doc={getSelection:()=>({isCollapsed:false,toString:()=>selected,getRangeAt:()=>range}),createTreeWalker:()=>{const nodes=[target];return {nextNode:()=>nodes.shift()};}};
+ const view=new p.MockMarkdown();view.file={path:'demo.md'};view.contentEl={contains:()=>true};view.getMode=()=>mode;view.editor={getValue:()=>source,listSelections:()=>{throw Error('Embedded text must not use CodeMirror cursor positions');}};p.currentView=()=>view;
+ p.app.vault.cachedRead=async()=>source;p.app.vault.getAbstractFileByPath=path=>({path});p.app.metadataCache={getFileCache:()=>({blocks:{'core-300':{position:{start:{offset:source.indexOf(line)},end:{offset:source.indexOf(line)+line.length}}}}})};
+ p.sections=new Set([{el:root,ctx:{sourcePath:path,getSectionInfo:()=>({lineStart:0,lineEnd:0,text:line})}}]);let shown=false;p.show=()=>{shown=true;};
+ await p.capture();assert.equal(shown,true);assert.equal(p.pending.path,path);assert.equal(p.pending.quote,selected);assert.equal(p.pending.from,source.indexOf(line)+7);clean(p);
+});

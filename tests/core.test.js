@@ -217,3 +217,14 @@ test('quoted fenced code previews preserve text, language, quote depth and sourc
 test('quoted code support leaves native callouts, incomplete fences and indented fences alone',()=>{const {quotedCodeBlocks}=require('../core');for(const source of ['> [!note] Native\n> ```js\n> code\n> ```','> [!note] Outer\n> > ```java\n> > code\n> > ```','> ```js\n> unfinished','> \t```java\n> code\n> \t```'])assert.equal(quotedCodeBlocks(source).length,0);const source='> > ```java\n> > // 中文\n> > ```';assert.equal(quotedCodeBlocks(source)[0].depth,2);assert.equal(quotedCodeBlocks(source)[0].code,'// 中文');});
 
 test('quote-looking examples inside an ordinary fenced code block stay literal',()=>{const {quotedCodeBlocks}=require('../core');assert.equal(quotedCodeBlocks('````md\n> ```js\n> example();\n> ```\n````').length,0);});
+
+test('sidebar text size defaults to note text and preserves bounded custom sizes',()=>{
+ const {settings}=require('../core');
+ assert.equal(settings({}).sidebarFontSize,0);
+ assert.equal(settings({sidebarFontSize:0}).sidebarFontSize,0);
+ assert.equal(settings({sidebarFontSize:13}).sidebarFontSize,13);
+ assert.equal(settings({sidebarFontSize:100}).sidebarFontSize,28);
+ assert.equal(settings({sidebarFontSize:-5}).sidebarFontSize,10);
+ assert.equal(settings({sidebarFontSize:'large'}).sidebarFontSize,0);
+ assert.equal(settings(settings({sidebarFontSize:14})).sidebarFontSize,14);
+});
